@@ -1,20 +1,27 @@
 # Contributing
 
-Use Rust 1.99 or later, edition 2024, Node.js 20 or later, and `just`. Clone with
+Use Rust 1.99 or later, edition 2024, Node.js 22 or later, and `just`. Clone with
 `--recurse-submodules` (or run `just tools`, which initializes `vendor/fusor-ai`). `unsafe` is
 denied except in the module that states why it needs it (see `AGENTS.md`).
 
 Run `just check` before considering a change complete. It formats, tests and lints the crates
-natively and the runtime for `wasm32-unknown-unknown` (SIMD128 and relaxed SIMD), and
-syntax-checks the scripts and the page. A change to the runtime, the page, the CLI or the
+natively, the runtime for `wasm32-unknown-unknown` (SIMD128 and relaxed SIMD) and the page,
+and syntax-checks the scripts. `just ui` builds the page and serves it; the page is a
+[fusor](https://github.com/fusor-rs/fusor) app in `app/`, built with the fusor CLI that
+`just tools` installs into `.tools/`. A change to the runtime, the page, the CLI or the
 submodule also needs `just build` once, then `just runtimes`, `just smoke`, `just parity` and
 `just e2e`. Say in the pull request what they showed (parity numbers, real-time factor, word
 error rate).
 
 The model, its compiler and the toolkit live in
-[fusor-ai](https://github.com/fusor-rs/fusor-ai). Change them there, then move the submodule
-here to the commit on fusor-ai's `main` (`git -C vendor/fusor-ai checkout <commit>`) in a
-change of its own, with the checks above.
+[fusor-ai](https://github.com/fusor-rs/fusor-ai): the crates come from crates.io as
+`fusor-ai-*`, and `vendor/fusor-ai`, a submodule at the same release, supplies the browser
+host scripts, the runtime build and the import check. To move to a new fusor-ai release, bump
+the `fusor-ai-*` pins in the root `Cargo.toml` and check out its tag in the submodule
+(`git -C vendor/fusor-ai checkout v<version>`) in one change of its own, with the checks
+above. To try an unreleased fusor-ai change here first, point the submodule at it and add a
+`[patch.crates-io]` table that maps each `fusor-ai-*` crate to its path under
+`vendor/fusor-ai/crates`; don't commit the patch.
 
 The threaded runtimes need `nightly-2025-11-15` with `rust-src`; `just tools` installs it,
 and fusor-ai's `scripts/install-tools.sh` the pinned wasm-bindgen and binaryen into `.tools/`.
@@ -48,8 +55,18 @@ It attaches the archives to the release, then `install.sh` last: its presence ma
 release complete. Running the workflow by hand builds and tests the archives without
 attaching them.
 
-Both workflows check out `vendor/fusor-ai`. While fusor-ai is private, that needs a
+Every workflow checks out `vendor/fusor-ai`. While fusor-ai is private, that needs a
 `FUSOR_AI_TOKEN` secret: a fine-grained token with read access to fusor-ai's contents.
+
+## Deploying the site
+
+[ming-wasm.fusor.build](https://ming-wasm.fusor.build) is the Vercel project `ming-wasm` in
+the `pirela` team, deployed as prebuilt files: Vercel has no Rust toolchain. Run the
+[Deploy site workflow](.github/workflows/deploy-site.yml) from the Actions tab (it needs a
+`VERCEL_TOKEN` secret in a GitHub environment named `vercel`), or `just deploy` locally after
+`vercel link --scope pirela --project ming-wasm`. [vercel.json](vercel.json) makes the page
+cross-origin isolated, so it gets the threaded runtimes, and redirects `/model/` to the
+published bundle on Hugging Face.
 
 ## Using AI tools
 

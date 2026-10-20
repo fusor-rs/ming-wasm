@@ -1,0 +1,48 @@
+name: Deploy site
+# Builds the page with its runtimes and deploys it to Vercel as prebuilt files
+# (ming-wasm.fusor.build). Vercel cannot build it itself: it has no Rust
+# toolchain. Run by hand from the Actions tab; `just deploy` does the same
+# locally after `vercel link --scope pirela --project ming-wasm`.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deploy to production (ming-wasm.fusor.build) or to a preview URL
+        type: choice
+        options: [production, preview]
+        default: production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: vercel
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: team_hpDr5Biqje4Idy2xKGjdDRsn
+      VERCEL_PROJECT_ID: prj_CAoMSaEGuUtyt0ZNbyARWymVsqE8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@just
+      - run: just tools
+      - run: npm install --global vercel@59.23.2
+      - run: vercel pull --yes --environment=${{ inputs.environment }}
+      - run: just deploy ${{ inputs.environment }}

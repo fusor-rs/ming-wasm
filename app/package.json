@@ -1,0 +1,6 @@
+{
+  "name": "ming-app",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "esbuild": "0.28.2" }
+}

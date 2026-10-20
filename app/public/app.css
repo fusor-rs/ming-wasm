@@ -1,0 +1,263 @@
+/* fusor's landing palette (fusor-rs/fusor, apps/landing/web/theme.css) and its control shapes. */
+:root {
+  --canvas: #faf9f6;
+  --surface: #f1efea;
+  --raised: #ffffff;
+  --ink: #272a2c;
+  --ink-soft: #5c5f61;
+  --ink-faint: #686b6d;
+  --hairline: #e3e0d9;
+  --accent: #a83228;
+  --on-accent: #faf9f6;
+  --ease-spring: linear(0, 0.049, 0.157, 0.285, 0.411, 0.525, 0.624, 0.705, 0.772, 0.825, 0.866, 0.899, 0.924, 0.943, 0.957, 0.968, 0.976, 0.982, 0.987, 0.99, 0.993, 0.995, 0.996, 0.997, 1);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #121314;
+    --surface: #1b1d1e;
+    --raised: #222426;
+    --ink: #f2f1ed;
+    --ink-soft: #b4b5b3;
+    --ink-faint: #8b8d8d;
+    --hairline: #303335;
+    --accent: #f0715a;
+    --on-accent: #121314;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* `display` rules below would otherwise override the attribute. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 3.5rem 1rem 2.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.masthead {
+  margin-bottom: 0.5rem;
+}
+
+.lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.times {
+  color: var(--ink-faint);
+  font-size: 1.25rem;
+}
+
+h1 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+
+.lede {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+}
+
+.card {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.broken {
+  border-color: var(--accent);
+}
+
+.broken p {
+  margin: 0;
+}
+
+label,
+legend {
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: var(--ink-soft);
+}
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--hairline);
+  border-radius: 0.75rem;
+  background: var(--canvas);
+  color: var(--ink);
+  padding: 0.625rem 0.875rem;
+  font: inherit;
+  resize: vertical;
+}
+
+.field::placeholder {
+  color: var(--ink-faint);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  position: relative;
+  font-weight: 500;
+}
+
+.chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip span {
+  display: inline-block;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 0.375rem 0.875rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.chip input:checked + span {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--canvas);
+}
+
+.chip input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.compose .row {
+  justify-content: flex-start;
+}
+
+.control {
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.5rem 1.125rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 550;
+  text-decoration: none;
+  transition: scale 0.2s var(--ease-spring), background-color 0.2s, color 0.2s;
+  user-select: none;
+}
+
+.control:not(:disabled) {
+  cursor: pointer;
+}
+
+.control:active:not(:disabled) {
+  scale: 0.97;
+}
+
+.control:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+progress {
+  width: 100%;
+  height: 0.375rem;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: var(--surface);
+}
+
+progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.2s;
+}
+
+progress::-moz-progress-bar {
+  background: var(--accent);
+}
+
+audio {
+  width: 100%;
+}
+
+.muted {
+  color: var(--ink-faint);
+  font-size: 0.875rem;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

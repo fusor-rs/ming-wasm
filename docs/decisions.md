@@ -178,3 +178,12 @@ libraries on its blocks, published to crates.io with the toolkit; this repositor
 through the `vendor/fusor-ai` submodule. The split changed no result: every dependency resolves
 to the same version, `just parity` prints the same numbers, and a bundle compiled here is
 byte-identical (every part hash) to the one compiled before the split.
+
+## D18. fusor-ai from crates.io
+
+Since fusor-ai v0.1.0 is on crates.io, the model and the toolkit come from there as
+`fusor-ai-*` crates, pinned exactly. The `vendor/fusor-ai` submodule stays, at the same
+release's tag, for what crates.io does not carry: the browser loader and compute pool, the
+runtime build script, the import check and the dev server. Switching changed no result:
+`just parity` prints the same numbers.
+

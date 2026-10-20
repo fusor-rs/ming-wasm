@@ -34,3 +34,8 @@ rustc-ice-*.txt
 /e2e/results/
 /fixtures/goldens/*.safetensors
 .DS_Store
+
+# Vercel CLI state and the IDE
+.vercel
+.env*
+.idea/

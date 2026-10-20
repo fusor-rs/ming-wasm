@@ -14,21 +14,26 @@ don't invent scope, features or options beyond the task.
   in, PCM out), built as four browser runtimes.
 - `crates/ming-cli`: the native CLI `ming` (`compile`, `say`, `bench`,
   `parity`).
-- `packages/web`: the page and the engine worker.
+- `app/`: the page, a [fusor](https://github.com/fusor-rs/fusor) app with its own
+  Cargo workspace (fusor pins wasm-bindgen 0.2.117, the runtime 0.2.129): the
+  form and progress as Rust signals in `src/app.rs`, the template in
+  `web/index.html`, the engine bridge and player in `web/*.js`, and the engine
+  worker in `engine/worker.js`, beside the runtimes `just runtimes` builds.
 - `scripts/`: the checkpoint download, the golden dump, the Node smoke test and
   the ASR check; `e2e/run.mjs`: the headless Chrome run.
 - `docs/`: the plan, the decisions and the measured results.
-- `vendor/fusor-ai`: [fusor-ai](https://github.com/fusor-rs/fusor-ai) as a git
-  submodule. The model (`ming`), its compiler (`ming-compile`), the kernels,
-  blocks, bundle format, browser loader, runtime build and import check live
-  there.
+- [fusor-ai](https://github.com/fusor-rs/fusor-ai): the model (`ming`), its
+  compiler (`ming-compile`), the kernels, blocks and bundle format come from
+  crates.io as `fusor-ai-*` crates; `vendor/fusor-ai`, a git submodule at the
+  same release, supplies what crates.io does not carry: the browser loader and
+  compute pool, the runtime build, the import check and the dev server.
 
 What belongs where: model code (dimensions, tensor names, wiring, sampling,
 prompts, the text frontend) and anything another model could reuse go to
 fusor-ai, following its `AGENTS.md`. This repository holds what turns the model
 into an app: the runtime surface, the CLI, the page, the checks against the
-reference and the releases. A change to fusor-ai lands there first; this
-repository then moves the submodule to that commit.
+reference and the releases. A change to fusor-ai lands and is released there
+first; this repository then moves to that release.
 
 Constraints that hold everywhere:
 
@@ -45,8 +50,11 @@ Constraints that hold everywhere:
   entropy. fusor-ai's `scripts/check-wasm-imports.mjs` is the check (`just
   runtimes` runs it on every build); never widen its allowlists to make a build
   pass.
-- `vendor/fusor-ai` moves only to a commit on fusor-ai's `main`, and the move
-  is its own change, with the parity numbers and the e2e result it gave.
+- The `fusor-ai-*` versions in `[workspace.dependencies]` and `vendor/fusor-ai`
+  name the same fusor-ai release (the submodule at its `v<version>` tag), and
+  move together in a change of their own, with the parity numbers and the e2e
+  result it gave. `[patch.crates-io]` entries pointing into `vendor/fusor-ai`
+  are for trying an unreleased change locally and never land.
 - Every crate shares the version in `[workspace.package]`.
 
 ## The standard

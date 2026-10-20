@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ming · text to speech in your browser</title>
+  <meta name="description" content="Ming-3.0-tts-0.5B running on this device's CPU, compiled to WebAssembly with fusor-ai. Your text never leaves the page.">
+  <link rel="icon" href="/brand/fusor-ai.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <App state="{{ App::new() }}">
+    <script type="module" src="./app.js"></script>
+    <main on:engine="state.receive(event)" data-phase="{{ state.phase.get().name() }}">
+      <header class="masthead">
+        <div class="lockup">
+          <img src="/brand/fusor-ai.svg" alt="fusor-ai" width="40" height="40">
+          <span class="times" aria-hidden="true">×</span>
+          <img src="/brand/ming.png" alt="Ming" width="34" height="40">
+        </div>
+        <h1>Text to speech, on this device</h1>
+        <p class="lede">Ming-3.0-tts-0.5B compiled to WebAssembly with fusor-ai. The model runs on your CPU; after it loads, nothing you type leaves the page.</p>
+      </header>
+
+      <If condition="{{ state.phase.get() == Phase::Loading }}">
+        <section class="card" aria-live="polite">
+          <div class="row"><strong>Loading the model</strong><span id="detail" class="muted">{{ state.detail.get() }}</span></div>
+          <progress max="1" value="{{ state.fraction.get() }}"></progress>
+        </section>
+      </If>
+
+      <If condition="{{ state.phase.get() == Phase::Broken }}">
+        <section class="card broken" role="alert">
+          <strong>The engine stopped</strong>
+          <p id="detail">{{ state.detail.get() }}</p>
+          <p class="muted">Reload the page to start again.</p>
+        </section>
+      </If>
+
+      <section class="card compose">
+        <label for="text">Text</label>
+        <textarea id="text" class="field" rows="4" maxlength="2000" bind="state.text"></textarea>
+
+        <fieldset hidden="{{ state.voices.get().is_empty() }}">
+          <legend>Voice</legend>
+          <div class="chips">
+            <ForEach items="{{ state.voices.get() }}" key="{{ |voice| voice.id.clone() }}">
+              <label class="chip"><input type="radio" name="voice" value="{{ item.get().id }}" bind="state.voice.clone()"><span>{{ item.get().label }}</span></label>
+            </ForEach>
+          </div>
+        </fieldset>
+
+        <If condition="{{ state.describing() }}">
+          <label for="description">Describe the voice</label>
+          <textarea id="description" class="field" rows="2" placeholder="A calm, deep male narrator with a slow, clear delivery." bind="state.description"></textarea>
+        </If>
+
+        <fieldset>
+          <legend>Speed</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="preset" value="quality" bind="state.preset"><span>Quality</span></label>
+            <label class="chip"><input type="radio" name="preset" value="balanced" bind="state.preset"><span>Balanced</span></label>
+            <label class="chip"><input type="radio" name="preset" value="fast" bind="state.preset"><span>Fast</span></label>
+          </div>
+        </fieldset>
+
+        <div class="row">
+          <button id="generate" type="button" class="control primary" disabled="{{ state.phase.get() != Phase::Ready }}" on:click="state.generate()">Generate</button>
+          <button id="stop" type="button" class="control" disabled="{{ state.phase.get() != Phase::Generating }}" on:click="state.stop()">Stop</button>
+          <span id="status" class="muted" aria-live="polite">{{ state.status.get() }}</span>
+        </div>
+        <If condition="{{ state.phase.get() == Phase::Generating }}">
+          <progress max="1" value="{{ state.fraction.get() }}"></progress>
+        </If>
+      </section>
+
+      <Match value="{{ state.audio.get() }}">
+        <Case pattern="Some(url)">
+          <section class="card result">
+            <audio controls src="{{ url.get() }}"></audio>
+            <div class="row">
+              <a id="download" class="control" download="ming.wav" href="{{ url.get() }}">Download WAV</a>
+              <span id="stats" class="muted">{{ state.stats.get() }}</span>
+            </div>
+          </section>
+        </Case>
+        <Case pattern="None"></Case>
+      </Match>
+
+      <footer class="muted">
+        <span id="runtime">{{ state.runtime.get() }}</span>
+        <span>Built with <a href="https://github.com/fusor-rs/fusor-ai">fusor-ai</a> and <a href="https://fusor.build">fusor</a> · <a href="https://github.com/fusor-rs/ming-wasm">source</a></span>
+      </footer>
+    </main>
+  </App>
+</body>
+</html>

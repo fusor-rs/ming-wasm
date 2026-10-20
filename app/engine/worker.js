@@ -9,10 +9,10 @@
 //
 // After the model is loaded nothing else is fetched: synthesis is entirely local.
 
-import { describe, fetchOk, loadParts, startRuntime } from '../dist/host/loader.js';
+import { describe, fetchOk, loadParts, startRuntime } from './dist/host/loader.js';
 
 const CACHE_DIR = 'ming-tts-parts';
-const DIST_URL = new URL('../dist/', import.meta.url);
+const DIST_URL = new URL('./dist/', import.meta.url);
 
 const post = (message, transfer) => self.postMessage(message, transfer ?? []);
 const yieldTask = () => new Promise((resolve) => setTimeout(resolve, 0));

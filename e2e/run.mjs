@@ -4,6 +4,7 @@
 // exists). Then reload: the revisit must load every part from OPFS.
 //
 //   PORT=8787 node e2e/run.mjs [--threads 8] [--build web-threaded] [--preset quality] [--text "..."]
+//   node e2e/run.mjs --url https://ming-wasm.fusor.build    # a deployed page, no local server
 //
 // Results (JSON, WAV, screenshots) go to e2e/results/<timestamp>-*.
 // Env: ASR_PYTHON (default ../ming-05b-experiment/.venv-asr/bin/python).
@@ -24,10 +25,11 @@ const { values } = parseArgs({
     preset: { type: 'string', default: 'quality' },
     text: { type: 'string', default: 'Please remember to water the plants on Tuesday, and call the dentist about the appointment at three o\'clock.' },
     'max-wer': { type: 'string', default: '0.15' },
+    url: { type: 'string' },
   },
 });
 const PORT = process.env.PORT ?? '8787';
-const BASE = `http://127.0.0.1:${PORT}`;
+const BASE = (values.url ?? `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
 const ASR_PYTHON = process.env.ASR_PYTHON ?? join(ROOT, '../ming-05b-experiment/.venv-asr/bin/python');
 const LOAD_DEADLINE_MS = 10 * 60 * 1000;
 const GENERATE_DEADLINE_MS = 10 * 60 * 1000;
@@ -43,16 +45,19 @@ const up = async () => {
   }
 };
 let server = null;
-if (!(await up())) {
+if (!values.url && !(await up())) {
   log(`starting fusor-ai's serve.mjs on :${PORT}`);
   const serve = join(ROOT, 'vendor/fusor-ai/scripts/serve.mjs');
-  const mounts = ['--mount', '/=packages/web', '--mount', '/model/=dist/model'];
+  const mounts = ['--mount', '/=app/dist', '--mount', '/model/=dist/model'];
   server = spawn(process.execPath, [serve, '--port', PORT, ...mounts], { cwd: ROOT, stdio: 'inherit' });
   for (let i = 0; i < 50 && !(await up()); i++) await new Promise((r) => setTimeout(r, 200));
 }
 
 mkdirSync(RUN_DIR, { recursive: true });
 const profile = mkdtempSync(join(tmpdir(), 'ming-e2e-'));
+// The page's state machine is `main[data-phase]`: loading, ready, generating, broken.
+const settled = () => /^(ready|broken)$/.test(document.querySelector('main')?.dataset.phase ?? '');
+const phase = (page) => page.getAttribute('main', 'data-phase');
 const results = { started: new Date().toISOString(), base: BASE, preset: values.preset, text: values.text };
 const failures = [];
 const check = (ok, message) => {
@@ -71,21 +76,21 @@ try {
 
   const t0 = Date.now();
   await page.goto(`${BASE}/${query}`);
-  await page.waitForFunction(() => /ready|Could not/.test(document.getElementById('load-title').textContent), null, { timeout: LOAD_DEADLINE_MS, polling: 250 });
+  await page.waitForFunction(settled, null, { timeout: LOAD_DEADLINE_MS, polling: 250 });
   results.loadMs = Date.now() - t0;
   results.runtime = await page.textContent('#runtime');
-  results.loadDetail = await page.textContent('#load-detail');
-  check((await page.textContent('#load-title')) === 'Model ready', `model loaded in ${(results.loadMs / 1000).toFixed(1)} s (${results.runtime}; ${results.loadDetail})`);
+  check((await phase(page)) === 'ready', `model loaded in ${(results.loadMs / 1000).toFixed(1)} s (${results.runtime})`);
   await page.screenshot({ path: join(RUN_DIR, `${STAMP}-ready.png`), fullPage: true });
 
   const requestsAtReady = requests.length;
   await page.fill('#text', values.text);
-  await page.selectOption('#preset', values.preset);
+  // The radios are visually hidden behind their labels.
+  await page.check(`input[name=preset][value=${values.preset}]`, { force: true });
   const t1 = Date.now();
   await page.click('#generate');
-  await page.waitForFunction(() => /^(done|stopped|error)/.test(document.getElementById('gen-status').textContent), null, { timeout: GENERATE_DEADLINE_MS, polling: 250 });
+  await page.waitForFunction(() => /^(done|stopped|error)/.test(document.getElementById('status').textContent), null, { timeout: GENERATE_DEADLINE_MS, polling: 250 });
   results.generateMs = Date.now() - t1;
-  results.status = await page.textContent('#gen-status');
+  results.status = await page.textContent('#status');
   results.stats = await page.textContent('#stats');
   results.requestsDuringSynthesis = requests.slice(requestsAtReady).filter((u) => !u.startsWith('blob:'));
   check(results.status === 'done', `generation finished: ${results.stats}`);
@@ -114,10 +119,10 @@ try {
 
   const t2 = Date.now();
   await page.reload();
-  await page.waitForFunction(() => /ready|Could not/.test(document.getElementById('load-title').textContent), null, { timeout: LOAD_DEADLINE_MS, polling: 250 });
+  await page.waitForFunction(settled, null, { timeout: LOAD_DEADLINE_MS, polling: 250 });
   results.revisitMs = Date.now() - t2;
-  results.revisitDetail = await page.textContent('#load-detail');
-  check(/from cache/.test(results.revisitDetail) && !/downloaded/.test(results.revisitDetail), `revisit in ${(results.revisitMs / 1000).toFixed(1)} s: ${results.revisitDetail}`);
+  results.revisitDetail = await page.textContent('#runtime');
+  check(/model loaded from this device/.test(results.revisitDetail), `revisit in ${(results.revisitMs / 1000).toFixed(1)} s: ${results.revisitDetail}`);
   await context.close();
 } finally {
   rmSync(profile, { recursive: true, force: true });

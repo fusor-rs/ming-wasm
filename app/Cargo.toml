@@ -1,0 +1,43 @@
+[package]
+name = "ming-app"
+description = "The Ming page: a fusor app around the engine worker."
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+publish = false
+
+# Its own workspace: fusor pins wasm-bindgen 0.2.117, the runtime 0.2.129.
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+fusor-core = { version = "=0.1.9", features = ["dom", "javascript"] }
+fusor-components = { version = "=0.1.9", features = ["browser"] }
+wasm-bindgen = "=0.2.117"
+web-sys = "=0.3.94"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+
+[build-dependencies]
+fusor-build = { version = "=0.1.9" }
+
+[package.metadata.fusor]
+entry = "web/index.html"
+output = "dist"
+base-path = "/"
+
+[package.metadata.fusor.assets]
+"/" = "public"
+# The engine worker and the runtimes `just runtimes` builds next to it.
+"/engine/" = "engine"
+"/brand/fusor-ai.svg" = "../vendor/fusor-ai/assets/brand/fusor-ai.svg"
+"/brand/ming.png" = "../assets/brand/ming.png"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"

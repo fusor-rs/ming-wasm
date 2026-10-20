@@ -1,11 +1,17 @@
-# Ming-3.0-tts-0.5B in the browser: `just build` then `just serve`.
+# Ming-3.0-tts-0.5B in the browser. `just ui` to try it; `just build` then `just serve` to build
+# everything, the model included, from source.
 
 fusor_ai := "vendor/fusor-ai"
 checkpoint := env_var_or_default("CHECKPOINT", ".cache/Ming-3.0-tts-0.5B")
 reference := env_var_or_default("REFERENCE", "../ming-05b-experiment")
 profile := env_var_or_default("PROFILE", "mix")
 model := "dist/model"
-web := "packages/web"
+# The published bundle, which the deployed page loads (vercel.json).
+hosted_model := "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/main/"
+app := "app"
+engine := "app/engine/dist"
+fusor := justfile_directory() / ".tools/bin/fusor"
+fusor_version := "0.1.9"
 port := env_var_or_default("PORT", "8787")
 nice := "nice -n 19"
 threads_toolchain := "nightly-2025-11-15"
@@ -20,6 +26,8 @@ check: lint wasm host
 
 lint:
     cargo fmt --all -- --check
+    cargo fmt --manifest-path {{app}}/Cargo.toml -- --check
+    cargo clippy --manifest-path {{app}}/Cargo.toml --target wasm32-unknown-unknown --locked -- -D warnings
     cargo test --workspace --locked
     cargo clippy --workspace --all-targets --locked -- -D warnings
     cargo doc --workspace --no-deps --locked
@@ -33,19 +41,22 @@ wasm:
 host:
     sh -n install.sh
     bash -n scripts/fetch-checkpoint.sh
-    node --check packages/web/src/app.js
-    node --check packages/web/src/worker.js
+    node --check app/web/app.js
+    node --check app/web/player.js
+    node --check app/engine/worker.js
     node --check scripts/node-smoke.mjs
     node --check e2e/run.mjs
 
-build: tools native model runtimes
+build: tools native model runtimes page
 
-# The threads toolchain and the pinned wasm-bindgen and binaryen (into .tools/).
+# The threads toolchain, and the pinned wasm-bindgen, binaryen and fusor CLI (into .tools/).
 tools:
     test -f {{fusor_ai}}/Cargo.toml || git submodule update --init
     rustup target list --installed | grep -q wasm32-unknown-unknown || rustup target add wasm32-unknown-unknown
     rustup run {{threads_toolchain}} rustc --version >/dev/null 2>&1 || rustup toolchain install {{threads_toolchain}} --profile minimal --component rust-src --target wasm32-unknown-unknown --no-self-update
     {{fusor_ai}}/scripts/install-tools.sh {{wasm_bindgen_version}} > /dev/null
+    {{fusor}} --version 2>/dev/null | grep -qx 'fusor {{fusor_version}}' || cargo install --root .tools fusor-cli --version {{fusor_version}} --locked
+    cd {{app}} && {{fusor}} install
 
 native:
     {{nice}} cargo build --release -p ming-cli
@@ -55,18 +66,33 @@ model: native
     scripts/fetch-checkpoint.sh {{checkpoint}}
     target/release/ming compile {{checkpoint}} {{model}} --profile {{profile}}
 
-# The four browser runtimes, fusor-ai's host package next to them, and the sealed-runtime check.
+# The four browser runtimes, fusor-ai's loader next to them, and the sealed-runtime check.
 runtimes: tools
-    for variant in {{variants}}; do {{nice}} {{fusor_ai}}/scripts/build-runtime.sh ming-runtime $variant {{web}}/dist || exit 1; done
-    mkdir -p {{web}}/dist/host
-    cp {{fusor_ai}}/packages/host/loader.js {{fusor_ai}}/packages/host/compute.js {{web}}/dist/host/
+    for variant in {{variants}}; do {{nice}} {{fusor_ai}}/scripts/build-runtime.sh ming-runtime $variant {{engine}} || exit 1; done
+    mkdir -p {{engine}}/host
+    cp {{fusor_ai}}/packages/host/loader.js {{engine}}/host/
     for variant in {{variants}}; do \
       flags=""; case $variant in *threaded*) flags="--threaded";; esac; case $variant in *relaxed*) ;; *) flags="$flags --no-relaxed";; esac; \
-      node {{fusor_ai}}/scripts/check-wasm-imports.mjs {{web}}/dist/$variant/ming_runtime_bg.wasm --glue {{web}}/dist/$variant/ming_runtime.js $flags || exit 1; \
+      node {{fusor_ai}}/scripts/check-wasm-imports.mjs {{engine}}/$variant/ming_runtime_bg.wasm --glue {{engine}}/$variant/ming_runtime.js $flags || exit 1; \
     done
 
+# The page, a fusor app, with the runtimes, into app/dist.
+page:
+    cd {{app}} && {{nice}} {{fusor}} build
+
 serve:
-    node {{fusor_ai}}/scripts/serve.mjs --port {{port}} --mount /={{web}} --mount /model/={{model}}
+    node {{fusor_ai}}/scripts/serve.mjs --port {{port}} --mount /={{app}}/dist --mount /model/={{model}}
+
+# Try it on localhost: the page with the bundle compiled here (`just model`), else the published one.
+ui: tools
+    test -f {{engine}}/web-single/ming_runtime_bg.wasm || just runtimes
+    just page
+    @if [ -f {{model}}/manifest.json ]; then \
+      echo "open http://localhost:{{port}}/"; \
+    else \
+      echo "open http://localhost:{{port}}/?model={{hosted_model}}"; \
+    fi
+    just serve
 
 # Golden tensors from the fp32 PyTorch reference (see scripts/dump_goldens.py).
 goldens:
@@ -84,7 +110,7 @@ smoke:
     node scripts/node-smoke.mjs {{model}} --build web-single
     node scripts/node-smoke.mjs {{model}} --build web-single-relaxed
 
-e2e:
+e2e: page
     cd e2e && npm install --no-audit --no-fund --silent && npx playwright install chromium
     PORT={{port}} node e2e/run.mjs
 
@@ -135,7 +161,7 @@ archive-check:
     grep -Fx 'error: checksum mismatch; download the release again' "$work/rejected.log"
 
 # The page with its four runtimes, the dev server, the checkpoint download and how to run them.
-web-archive: runtimes
+web-archive: runtimes page
     #!/usr/bin/env bash
     set -euo pipefail
     name="ming-web-{{version}}"
@@ -143,12 +169,20 @@ web-archive: runtimes
     out="target/release-archives/v{{version}}"
     rm -rf "$staging"
     mkdir -p "$staging" "$out"
-    cp -R {{web}}/index.html {{web}}/src {{web}}/dist "$staging/"
+    cp -R {{app}}/dist/. "$staging/"
+    rm "$staging/.fusor-output.json"
     cp {{fusor_ai}}/scripts/serve.mjs scripts/fetch-checkpoint.sh LICENSE README.md "$staging/"
     COPYFILE_DISABLE=1 tar -czf "$out/$name.tar.gz" -C target/release-archives "$name"
     (cd "$out" && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256")
     listing=$(tar -tzf "$out/$name.tar.gz")
     for variant in {{variants}}; do
-        grep -qx "$name/dist/$variant/ming_runtime_bg.wasm" <<< "$listing"
+        grep -qx "$name/engine/dist/$variant/ming_runtime_bg.wasm" <<< "$listing"
     done
     echo "$out/$name.tar.gz"
+
+# The page to Vercel as prebuilt files: `production` (ming-wasm.fusor.build) or `preview`.
+deploy environment="production":
+    @case "{{environment}}" in production|preview) ;; *) echo "deploy: expected production or preview, got {{environment}}" >&2; exit 2 ;; esac
+    vercel build {{ if environment == "production" { "--prod" } else { "" } }} --yes
+    find .vercel/output/static -name '.fusor-*.json' -delete
+    vercel deploy --prebuilt {{ if environment == "production" { "--prod" } else { "" } }} --yes

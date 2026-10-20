@@ -18,7 +18,7 @@ const { values, positionals } = parseArgs({
   },
 });
 const bundle = positionals[0] ?? 'dist/model';
-const dist = new URL(`../packages/web/dist/${values.build}/`, import.meta.url);
+const dist = new URL(`../app/engine/dist/${values.build}/`, import.meta.url);
 const glue = await import(new URL('ming_runtime.js', dist));
 glue.initSync({ module: readFileSync(new URL('ming_runtime_bg.wasm', dist)) });
 

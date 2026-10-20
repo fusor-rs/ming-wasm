@@ -1,0 +1,8 @@
+# The repository's thresholds, without `excessive-nesting-threshold`: fusor's generated template
+# code nests deeper than five levels.
+too-many-lines-threshold = 60
+too-many-arguments-threshold = 5
+cognitive-complexity-threshold = 15
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+max-fn-params-bools = 1
