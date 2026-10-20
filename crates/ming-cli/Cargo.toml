@@ -1,0 +1,26 @@
+[package]
+name = "ming-cli"
+description = "The native Ming host: compile the checkpoint, synthesize, benchmark, and check parity with the PyTorch goldens."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "ming"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+ming = { workspace = true, features = ["threads"] }
+ming-compile.workspace = true
+bundle.workspace = true
+compile.workspace = true
+rayon.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+
+[lints]
+workspace = true

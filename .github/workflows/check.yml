@@ -1,0 +1,53 @@
+name: Check
+on: [push, pull_request, workflow_call]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    # The CLI's native kernels: NEON `sdot` on macOS (Apple silicon), scalar on
+    # Linux (x86-64).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@just
+      - run: just check
+
+  # The four Ming runtimes, each through the sealed-runtime import check.
+  runtimes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@just
+      - run: just tools
+      - run: just runtimes

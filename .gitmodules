@@ -1,0 +1,3 @@
+[submodule "vendor/fusor-ai"]
+	path = vendor/fusor-ai
+	url = https://github.com/fusor-rs/fusor-ai.git

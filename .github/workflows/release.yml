@@ -1,0 +1,141 @@
+name: Release
+# Publishing a GitHub release tagged vX.Y.Z runs Check, builds the `ming` CLI
+# archives (macOS on Apple silicon, Linux on x86-64) and the page with its four
+# runtimes, installs each CLI archive with install.sh and attaches everything to
+# the release, install.sh last. Running the workflow by hand only builds and
+# tests the archives. See "Releasing" in CONTRIBUTING.md.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never run two releases at once, and never cancel one halfway.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/check.yml
+
+  version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - name: Read and validate the version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=$(cargo metadata --locked --no-deps --format-version 1 |
+            jq -er '.packages[] | select(.name == "ming-cli") | .version')
+          if [ "$EVENT_NAME" = release ] && [ "$RELEASE_TAG" != "v$version" ]; then
+            echo "::error::Release tag $RELEASE_TAG must match Cargo.toml version v$version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  cli:
+    needs: [check, version]
+    strategy:
+      matrix:
+        include:
+          - { os: macos-15, target: aarch64-apple-darwin }
+          - { os: ubuntu-24.04, target: x86_64-unknown-linux-gnu }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@just
+      - run: just archive
+      - run: just archive-check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ming-${{ matrix.target }}
+          path: target/release-archives/v${{ needs.version.outputs.version }}/*
+          if-no-files-found: error
+          compression-level: 0
+
+  web:
+    needs: [check, version]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@just
+      - run: just tools
+      - run: just web-archive
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ming-web
+          path: target/release-archives/v${{ needs.version.outputs.version }}/*
+          if-no-files-found: error
+          compression-level: 0
+
+  attach:
+    if: github.event_name == 'release'
+    needs: [cli, web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Attach the release archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" artifacts/* --clobber --repo "$GITHUB_REPOSITORY"
+
+  # install.sh goes up last: its presence marks the release complete.
+  ready:
+    if: github.event_name == 'release'
+    needs: attach
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          # fusor-ai is private: FUSOR_AI_TOKEN reads it (CONTRIBUTING.md, "Releasing").
+          token: ${{ secrets.FUSOR_AI_TOKEN || github.token }}
+      - name: Mark the release ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" install.sh --clobber --repo "$GITHUB_REPOSITORY"

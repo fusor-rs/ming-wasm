@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ming TTS, local</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 16h3M10 9v14M16 4v24M22 10v12M28 14v4' stroke='%233b82f6' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="src/style.css">
+  <script type="module" src="src/app.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Ming TTS <span class="tag">runs in your browser</span></h1>
+      <p class="lede">Ming-3.0-tts-0.5B compiled to WebAssembly. Text in, 44.1 kHz speech out, computed on this device's CPU. After the model loads, nothing leaves the page.</p>
+    </header>
+
+    <section id="load" class="card">
+      <div class="row between">
+        <strong id="load-title">Loading the model…</strong>
+        <span id="load-detail" class="muted"></span>
+      </div>
+      <progress id="load-bar" max="1" value="0"></progress>
+    </section>
+
+    <section class="card" id="compose" aria-disabled="true">
+      <label for="text">Text</label>
+      <textarea id="text" rows="4" maxlength="2000">The evening wind drifted down from the mountain pass, and the distant clouds slowly turned gold.</textarea>
+
+      <div class="grid">
+        <div>
+          <label for="voice">Voice</label>
+          <select id="voice"></select>
+        </div>
+        <div>
+          <label for="preset">Speed</label>
+          <select id="preset">
+            <option value="quality">Quality (10 steps)</option>
+            <option value="balanced">Balanced (10 steps, lighter guidance)</option>
+            <option value="fast">Fast (7 steps, may slur numbers)</option>
+          </select>
+        </div>
+        <div>
+          <label for="seed">Seed</label>
+          <input id="seed" type="number" value="1895" min="0" step="1">
+        </div>
+      </div>
+
+      <div id="instruction-box" hidden>
+        <label for="instruction" id="instruction-label">Describe the voice</label>
+        <textarea id="instruction" rows="2"></textarea>
+      </div>
+
+      <div class="row">
+        <button id="generate" class="primary" disabled>Generate</button>
+        <button id="stop" disabled>Stop</button>
+        <span id="gen-status" class="muted" aria-live="polite"></span>
+      </div>
+      <progress id="gen-bar" max="1" value="0" hidden></progress>
+    </section>
+
+    <section class="card" id="output" hidden>
+      <audio id="player" controls></audio>
+      <div class="row between">
+        <a id="download" download="ming-tts.wav">Download WAV</a>
+        <span id="stats" class="muted"></span>
+      </div>
+    </section>
+
+    <footer class="muted">
+      <span id="runtime">—</span> · <span id="network">network requests since load: —</span>
+    </footer>
+  </main>
+</body>
+</html>

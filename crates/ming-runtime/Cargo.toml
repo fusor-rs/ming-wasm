@@ -1,0 +1,33 @@
+[package]
+name = "ming-runtime"
+description = "The Ming browser runtime: the model behind a wasm-bindgen surface (bundle parts in, PCM out)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ming.workspace = true
+bundle.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[features]
+# Threaded runtimes (vendor/fusor-ai/scripts/build-runtime.sh): the team runs on a wasm-bindgen-rayon pool of
+# page-owned workers sharing this module's memory.
+threads = ["ming/threads", "dep:wasm-bindgen-rayon"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+getrandom.workspace = true
+wasm-bindgen-rayon = { workspace = true, optional = true }
+# Not called here: SIMD for the BLAKE3 that checks every part.
+blake3 = { workspace = true, features = ["wasm32_simd"] }
+
+[lints]
+workspace = true
