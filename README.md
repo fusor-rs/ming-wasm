@@ -13,24 +13,26 @@ ming-wasm is the app around the model: a [fusor](https://github.com/fusor-rs/fus
 
 **In development · v0.1**: this is experimental software. See [status and known limitations](#status-and-known-limitations).
 
-[Try it](https://ming-wasm.fusor.build) · [Get started](#get-started) · [How it works](#how-it-works) · [Documentation](#documentation) · [Status](#status-and-known-limitations) · [Contributing](CONTRIBUTING.md)
+[Run it](#run-it-locally) · [Try it online](#try-it-online) · [How it works](#how-it-works) · [Benchmarks](benchmarks.md) · [Status](#status-and-known-limitations) · [Contributing](CONTRIBUTING.md)
 
-## Try it
+## Run it locally
 
-Open [ming-wasm.fusor.build](https://ming-wasm.fusor.build) in Chrome or Edge. The page downloads the 850 MB model once and keeps it in the browser's storage, so the next visit loads in about a second. On an Apple M4 Pro it speaks 1.5–2× faster than real time.
-
-Pick one of seven built-in voices, English or Chinese, or describe a voice in words; English numbers, money, percentages and units are read out. Audio plays while it is generated, and **Download WAV** saves it.
-
-## Get started
-
-You need Rust 1.99 or newer, installed with [rustup](https://rustup.rs), Node.js 22 or newer and [`just`](https://github.com/casey/just).
+You need Rust 1.99 or newer, installed with [rustup](https://rustup.rs), Node.js 22 or newer and [`just`](https://github.com/casey/just). Then:
 
 ```sh
 git clone --recurse-submodules https://github.com/fusor-rs/ming-wasm && cd ming-wasm
 just ui
 ```
 
-`just ui` installs the pinned tools (the threads toolchain with rustup; wasm-bindgen, binaryen and the fusor CLI into `.tools/`), builds the four browser runtimes the first time (a few minutes), builds the page and serves it on `http://localhost:8787`. The page loads the published model bundle, or the one in `dist/model` once you build your own.
+and open the address it prints. That's all: `just ui` installs the pinned tools (the threads toolchain with rustup; wasm-bindgen, binaryen and the fusor CLI into `.tools/`), builds the four browser runtimes the first time (a few minutes), builds the page and serves it on `http://localhost:8787`. The page loads the published model, an 850 MB download the first time, or the bundle in `dist/model` once you compile your own.
+
+## Try it online
+
+Open [ming-wasm.fusor.build](https://ming-wasm.fusor.build) in Chrome or Edge. The page downloads the model once and keeps it in the browser's storage, so the next visit loads in about a second. On an Apple M4 Pro it speaks 1.5–2× faster than real time; [benchmarks.md](benchmarks.md) has the measurements against the PyTorch reference and other runtimes. The same page runs as a Hugging Face Space, [fusorlabs/ming-wasm](https://huggingface.co/spaces/fusorlabs/ming-wasm).
+
+Pick one of seven built-in voices, English or Chinese, or describe a voice in words; English numbers, money, percentages and units are read out. Audio plays while it is generated, and **Download WAV** saves it.
+
+## More ways to run it
 
 ### Build everything from source
 
@@ -51,7 +53,7 @@ version=0.1.0
 curl -fsSL https://github.com/fusor-rs/ming-wasm/releases/download/v$version/ming-web-$version.tar.gz | tar -xz
 cd ming-web-$version
 ./fetch-checkpoint.sh checkpoint && ming compile checkpoint model
-node serve.mjs --mount /=.    # http://localhost:8787/
+node serve.mjs --mount /=.    # http://localhost:8787/?model=model/
 ```
 
 `install.sh` puts `ming` in `~/.ming/bin`, and `MING_INSTALL` picks another directory. The CLI also speaks without a browser: `ming say model "Hello there." -o hello.wav`.
@@ -68,9 +70,7 @@ node serve.mjs --mount /=.    # http://localhost:8787/
 
 | Guide | Covers |
 | --- | --- |
-| [Design](docs/plan.md) | How the model was ported: the architecture, the kernels, the threading and the parity plan |
-| [Decisions](docs/decisions.md) | Where the build departs from the plan, and why |
-| [Results](docs/results.md) | Parity with the PyTorch reference, and speed for every build |
+| [Benchmarks](benchmarks.md) | Speed, latency and memory against the PyTorch reference and other runtimes, and how to reproduce them |
 | [Contributing](CONTRIBUTING.md) | Setup, checks, moving fusor-ai, and releasing |
 
 ## Status and known limitations
@@ -89,8 +89,8 @@ ming-wasm is v0.1 and experimental.
 
 **Not supported yet:**
 
-- Voice cloning from a recording: it needs the VAE encoder and the CAM++ speaker model in the browser ([decisions](docs/decisions.md), D2).
-- The reference's text normalizer for dates, times and abbreviations ([decisions](docs/decisions.md), D10): they are read as written.
+- Voice cloning from a recording: it needs the model's audio encoder and speaker model in the browser.
+- The reference's text normalizer for dates, times and abbreviations: they are read as written.
 
 The model's license (MIT) and its usage disclaimer apply: label synthetic speech as synthetic.
 

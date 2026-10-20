@@ -1,4 +1,4 @@
-//! `ming parity`: each stage, teacher-forced, against the reference's goldens (plan §8).
+//! `ming parity`: each stage, teacher-forced, against the reference's goldens.
 //!
 //! Each stage gets the reference's own inputs (prompt ids, `z`, history, noise, latents), so
 //! errors do not compound through the autoregressive loop. Reported as relative L2

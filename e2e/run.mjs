@@ -6,6 +6,9 @@
 //   PORT=8787 node e2e/run.mjs [--threads 8] [--build web-threaded] [--preset quality] [--text "..."]
 //   node e2e/run.mjs --url https://ming-wasm.fusor.build    # a deployed page, no local server
 //
+// `--model <url>` is the page's `?model=`: `model/` (dist/model) on the local server, the page's
+// own default (the published bundle) with `--url`.
+//
 // Results (JSON, WAV, screenshots) go to e2e/results/<timestamp>-*.
 // Env: ASR_PYTHON (default ../ming-05b-experiment/.venv-asr/bin/python).
 
@@ -26,10 +29,12 @@ const { values } = parseArgs({
     text: { type: 'string', default: 'Please remember to water the plants on Tuesday, and call the dentist about the appointment at three o\'clock.' },
     'max-wer': { type: 'string', default: '0.15' },
     url: { type: 'string' },
+    model: { type: 'string' },
   },
 });
 const PORT = process.env.PORT ?? '8787';
 const BASE = (values.url ?? `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
+const MODEL = values.model ?? (values.url ? undefined : 'model/');
 const ASR_PYTHON = process.env.ASR_PYTHON ?? join(ROOT, '../ming-05b-experiment/.venv-asr/bin/python');
 const LOAD_DEADLINE_MS = 10 * 60 * 1000;
 const GENERATE_DEADLINE_MS = 10 * 60 * 1000;
@@ -72,7 +77,7 @@ try {
   const page = context.pages()[0] ?? (await context.newPage());
   page.on('console', (m) => m.type() === 'error' && log('console:', m.text()));
   page.on('pageerror', (e) => log('pageerror:', e.message));
-  const query = `?${new URLSearchParams(Object.entries({ threads: values.threads, build: values.build }).filter(([, v]) => v))}`;
+  const query = `?${new URLSearchParams(Object.entries({ threads: values.threads, build: values.build, model: MODEL }).filter(([, v]) => v))}`;
 
   const t0 = Date.now();
   await page.goto(`${BASE}/${query}`);

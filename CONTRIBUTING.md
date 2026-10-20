@@ -55,9 +55,6 @@ It attaches the archives to the release, then `install.sh` last: its presence ma
 release complete. Running the workflow by hand builds and tests the archives without
 attaching them.
 
-Every workflow checks out `vendor/fusor-ai`. While fusor-ai is private, that needs a
-`FUSOR_AI_TOKEN` secret: a fine-grained token with read access to fusor-ai's contents.
-
 ## Deploying the site
 
 [ming-wasm.fusor.build](https://ming-wasm.fusor.build) is the Vercel project `ming-wasm` in
@@ -65,8 +62,18 @@ the `pirela` team, deployed as prebuilt files: Vercel has no Rust toolchain. Run
 [Deploy site workflow](.github/workflows/deploy-site.yml) from the Actions tab (it needs a
 `VERCEL_TOKEN` secret in a GitHub environment named `vercel`), or `just deploy` locally after
 `vercel link --scope pirela --project ming-wasm`. [vercel.json](vercel.json) makes the page
-cross-origin isolated, so it gets the threaded runtimes, and redirects `/model/` to the
-published bundle on Hugging Face.
+cross-origin isolated, so it gets the threaded runtimes.
+
+The same page is the static Hugging Face Space
+[fusorlabs/ming-wasm](https://huggingface.co/spaces/fusorlabs/ming-wasm). Run the
+[Deploy Space workflow](.github/workflows/deploy-space.yml) (it needs an `HF_TOKEN` secret in
+a GitHub environment named `huggingface`), or `just deploy-space` locally with
+[uv](https://docs.astral.sh/uv/) after `hf auth login`. It uploads the page with
+[space/README.md](space/README.md), whose `custom_headers` make the Space cross-origin isolated.
+
+Both load the published bundle,
+[fusorlabs/ming-3.0-tts-0.5b-web](https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web);
+`?model=<url>` loads another one, such as `?model=model/` for `dist/model` under `just serve`.
 
 ## Using AI tools
 

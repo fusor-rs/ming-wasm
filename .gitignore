@@ -39,3 +39,6 @@ rustc-ice-*.txt
 .vercel
 .env*
 .idea/
+
+# Raw benchmark outputs (benchmarks.md summarizes them)
+/benchmarks/out/

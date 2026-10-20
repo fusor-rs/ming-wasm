@@ -1,0 +1,37 @@
+name: Deploy Space
+# Builds the page with its runtimes and uploads it to the Hugging Face Space
+# fusorlabs/ming-wasm, a static Space configured by space/README.md. Run by
+# hand from the Actions tab; `just deploy-space` does the same locally after
+# `hf auth login`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-space
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: huggingface
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@just
+      - run: just tools
+      - uses: astral-sh/setup-uv@v6
+      - run: just deploy-space

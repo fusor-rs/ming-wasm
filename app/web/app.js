@@ -11,8 +11,9 @@ const cores = navigator.hardwareConcurrency || 4;
 // forces the single-threaded build. Never more than the cores: the barriers spin.
 const requestedThreads = Number.parseInt(params.get('threads') ?? '', 10);
 const THREADS = Math.min(cores, requestedThreads > 0 ? requestedThreads : Math.max(1, Math.min(8, cores - 2)));
-// `?model=<url>` loads another bundle; `?build=web-single` pins a runtime build.
-const MODEL_URL = new URL(params.get('model') ?? 'model/', document.baseURI).href;
+const HOSTED_MODEL = 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/main/';
+// `?model=<url>` loads another bundle than the published one; `?build=web-single` pins a build.
+const MODEL_URL = new URL(params.get('model') ?? HOSTED_MODEL, document.baseURI).href;
 
 const mb = (bytes) => `${(bytes / 1e6).toFixed(0)} MB`;
 

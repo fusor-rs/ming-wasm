@@ -1,0 +1,48 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Kokoro.js timing</title>
+<!-- A different, smaller model (Kokoro-82M via transformers.js / onnxruntime-web), timed the same
+     way as the ming-wasm page: load, then each sentence N times. Driven by benchmarks/kokoro.mjs. -->
+<pre id="log"></pre>
+<script type="module">
+  const log = (s) => (document.getElementById('log').textContent += s + '\n');
+  const params = new URLSearchParams(location.search);
+  const dtype = params.get('dtype') ?? 'q8';
+  const repeat = Number(params.get('repeat') ?? 3);
+  const SENTENCES = {
+    S1: "Please remember to water the plants on Tuesday, and call the dentist about the appointment at three o'clock.",
+    S2: 'The evening wind drifted down from the mountain pass, and the distant clouds slowly turned gold.',
+    S3: 'Glaciers move slowly, carving valleys over thousands of years while the rivers below carry the silt to the sea.',
+  };
+  const results = { dtype, device: 'wasm', runs: [], wavs: {} };
+  try {
+    const t0 = performance.now();
+    const { KokoroTTS } = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
+    const tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', { dtype, device: 'wasm' });
+    results.loadMs = performance.now() - t0;
+    results.threads = navigator.hardwareConcurrency;
+    log(`loaded ${dtype} in ${(results.loadMs / 1000).toFixed(1)} s`);
+    await tts.generate('Warm up.', { voice: 'af_heart' });
+    for (const [key, text] of Object.entries(SENTENCES)) {
+      for (let i = 0; i < repeat; i++) {
+        const t1 = performance.now();
+        const audio = await tts.generate(text, { voice: 'af_heart' });
+        const gen_s = (performance.now() - t1) / 1000;
+        const audio_s = audio.audio.length / audio.sampling_rate;
+        results.runs.push({ sentence: key, run: i, audio_s: +audio_s.toFixed(3), gen_s: +gen_s.toFixed(3), rtf: +(gen_s / audio_s).toFixed(3) });
+        log(`${key} run ${i}: ${audio_s.toFixed(2)} s audio in ${gen_s.toFixed(2)} s, RTF ${(gen_s / audio_s).toFixed(3)}`);
+        if (i === 0) {
+          const bytes = new Uint8Array(await audio.toBlob().arrayBuffer());
+          let s = '';
+          for (let o = 0; o < bytes.length; o += 0x8000) s += String.fromCharCode(...bytes.subarray(o, o + 0x8000));
+          results.wavs[key] = btoa(s);
+        }
+      }
+    }
+  } catch (e) {
+    results.error = String(e?.stack ?? e);
+    log('error: ' + results.error);
+  }
+  window.__results = results;
+  document.body.dataset.done = '1';
+</script>

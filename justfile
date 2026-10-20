@@ -6,8 +6,6 @@ checkpoint := env_var_or_default("CHECKPOINT", ".cache/Ming-3.0-tts-0.5B")
 reference := env_var_or_default("REFERENCE", "../ming-05b-experiment")
 profile := env_var_or_default("PROFILE", "mix")
 model := "dist/model"
-# The published bundle, which the deployed page loads (vercel.json).
-hosted_model := "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/main/"
 app := "app"
 engine := "app/engine/dist"
 fusor := justfile_directory() / ".tools/bin/fusor"
@@ -81,17 +79,17 @@ page:
     cd {{app}} && {{nice}} {{fusor}} build
 
 serve:
+    @if [ -f {{model}}/manifest.json ]; then \
+      echo "open http://localhost:{{port}}/?model=model/"; \
+    else \
+      echo "open http://localhost:{{port}}/"; \
+    fi
     node {{fusor_ai}}/scripts/serve.mjs --port {{port}} --mount /={{app}}/dist --mount /model/={{model}}
 
 # Try it on localhost: the page with the bundle compiled here (`just model`), else the published one.
 ui: tools
     test -f {{engine}}/web-single/ming_runtime_bg.wasm || just runtimes
     just page
-    @if [ -f {{model}}/manifest.json ]; then \
-      echo "open http://localhost:{{port}}/"; \
-    else \
-      echo "open http://localhost:{{port}}/?model={{hosted_model}}"; \
-    fi
     just serve
 
 # Golden tensors from the fp32 PyTorch reference (see scripts/dump_goldens.py).
@@ -186,3 +184,28 @@ deploy environment="production":
     vercel build {{ if environment == "production" { "--prod" } else { "" } }} --yes
     find .vercel/output/static -name '.fusor-*.json' -delete
     vercel deploy --prebuilt {{ if environment == "production" { "--prod" } else { "" } }} --yes
+
+# The page to the Hugging Face Space fusorlabs/ming-wasm, configured by space/README.md.
+deploy-space: runtimes page
+    #!/usr/bin/env bash
+    set -euo pipefail
+    staging="target/space"
+    rm -rf "$staging"
+    mkdir -p "$staging"
+    cp -R {{app}}/dist/. "$staging/"
+    find "$staging" -name '.fusor-*.json' -delete
+    cp space/README.md "$staging/"
+    # Not `hf upload`: it first creates the repo as a Gradio Space, which Hugging Face refuses for
+    # a free organization (402) even when the static Space exists.
+    uv run --no-project --with huggingface_hub==0.36.2 python - "$staging" <<'EOF'
+    import sys
+    from huggingface_hub import HfApi
+
+    HfApi().upload_folder(
+        repo_id="fusorlabs/ming-wasm",
+        repo_type="space",
+        folder_path=sys.argv[1],
+        delete_patterns="*",
+        commit_message="Deploy ming-wasm {{version}}",
+    )
+    EOF

@@ -5,9 +5,6 @@
   "installCommand": "",
   "buildCommand": "just runtimes page",
   "outputDirectory": "app/dist",
-  "redirects": [
-    { "source": "/model/:path*", "destination": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/main/:path*", "permanent": false }
-  ],
   "headers": [
     {
       "source": "/(.*)",

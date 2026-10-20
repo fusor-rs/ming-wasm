@@ -21,7 +21,8 @@ don't invent scope, features or options beyond the task.
   worker in `engine/worker.js`, beside the runtimes `just runtimes` builds.
 - `scripts/`: the checkpoint download, the golden dump, the Node smoke test and
   the ASR check; `e2e/run.mjs`: the headless Chrome run.
-- `docs/`: the plan, the decisions and the measured results.
+- `benchmarks.md` and `benchmarks/`: the measured speed against the PyTorch
+  reference and other runtimes, with the harness that reproduces it.
 - [fusor-ai](https://github.com/fusor-rs/fusor-ai): the model (`ming`), its
   compiler (`ming-compile`), the kernels, blocks and bundle format come from
   crates.io as `fusor-ai-*` crates; `vendor/fusor-ai`, a git submodule at the
