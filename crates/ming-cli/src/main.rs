@@ -14,8 +14,10 @@ use std::time::Instant;
 use anyhow::{Context, Result};
 use bundle::{Manifest, Store};
 use clap::{Parser, Subcommand};
+use ming::SAMPLE_RATE;
+use ming::preset::Preset;
 use ming::prompt::Voice;
-use ming::session::{Engine, Preset, Request, SAMPLE_RATE};
+use ming::session::{Engine, Request};
 
 #[derive(Parser)]
 #[command(name = "ming", version)]

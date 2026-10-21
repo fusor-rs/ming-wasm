@@ -6,8 +6,9 @@ use std::time::Instant;
 use anyhow::Result;
 use ming::flow_head::LATENT;
 use ming::pipeline::Stage;
+use ming::preset::Preset;
 use ming::prompt::Voice;
-use ming::session::{Engine, Preset};
+use ming::session::Engine;
 use ming::vocoder::FRAME_SAMPLES;
 
 const SENTENCE: &str = "The evening wind drifted down from the mountain pass, and the distant clouds slowly turned gold.";

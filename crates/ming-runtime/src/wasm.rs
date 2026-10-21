@@ -84,8 +84,7 @@ impl Runtime {
 
     /// Discards what was written to part `part` (after a failed `end_part`), to write it again.
     pub fn restart_part(&mut self, part: usize) -> Result<(), JsError> {
-        self.store()?.restart_part(part);
-        Ok(())
+        self.store()?.restart_part(part).map_err(err)
     }
 
     /// Checks the part's size and BLAKE3; after the last part, builds the engine. Returns

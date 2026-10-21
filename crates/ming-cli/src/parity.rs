@@ -10,8 +10,9 @@ use anyhow::{Result, ensure};
 use ming::flow_head::LATENT;
 use ming::model::HIDDEN;
 use ming::pipeline::Stage;
+use ming::preset::Preset;
 use ming::prompt::{Prompt, Voice};
-use ming::session::{Engine, Preset};
+use ming::session::Engine;
 
 use compile::Checkpoint;
 
