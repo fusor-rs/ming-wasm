@@ -34,6 +34,7 @@ base-path = "/"
 # The engine worker and the runtimes `just runtimes` builds next to it.
 "/engine/" = "engine"
 "/brand/fusor-ai.svg" = "../vendor/fusor-ai/assets/brand/fusor-ai.svg"
+"/base.css" = "../vendor/fusor-ai/packages/ui/base.css"
 "/brand/ming.png" = "../assets/brand/ming.png"
 
 [profile.release]
