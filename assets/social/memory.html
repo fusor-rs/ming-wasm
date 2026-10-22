@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  The memory post: peak resident memory while speaking, from benchmarks.md. Rendered at 1600×900,
+  twice the pixels, by `node assets/social/render.mjs` into ming-wasm-memory.png.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --canvas: #faf9f6; --ink: #272a2c; --soft: #5c5f61; --faint: #8b8d8d; --hairline: #e3e0d9;
+    --oxide: #a83228; --vermilion: #df5036; --slate: #b9bab9;
+  }
+  html, body { margin: 0; }
+  body {
+    width: 1600px; height: 900px; overflow: hidden; position: relative;
+    background: var(--canvas); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .masthead { position: absolute; left: 110px; top: 80px; display: flex; align-items: center; gap: 18px; }
+  .masthead img { height: 54px; }
+  .times { font-size: 26px; color: var(--faint); }
+  .title { margin-left: 14px; }
+  .title b { display: block; font-size: 34px; letter-spacing: -0.02em; }
+  .title span { font-size: 19px; color: var(--soft); }
+  .headline { position: absolute; right: 110px; top: 64px; text-align: right; }
+  .headline b { display: block; font-size: 112px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; color: var(--oxide); }
+  .headline span { font-size: 24px; color: var(--soft); }
+  .headline span strong { color: var(--ink); font-weight: 600; }
+  .chart { position: absolute; left: 110px; right: 110px; top: 300px; }
+  .row { display: grid; grid-template-columns: 380px 1fr; align-items: center; gap: 28px; height: 104px; }
+  .name { font-size: 26px; font-weight: 600; }
+  .name small { display: block; font-size: 19px; font-weight: 400; color: var(--soft); margin-top: 4px; }
+  .bar { position: relative; height: 44px; }
+  .fill { height: 100%; border-radius: 10px; }
+  .value { position: absolute; top: 50%; transform: translateY(-50%); font-size: 28px; font-weight: 650; padding-left: 18px; }
+  .note { position: absolute; left: 110px; right: 110px; bottom: 56px; display: flex; justify-content: space-between; font-size: 18px; color: var(--faint); }
+  .note b { color: var(--ink); font-size: 21px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <img src="../../vendor/fusor-ai/assets/brand/fusor-ai.svg" alt="">
+    <span class="times">×</span>
+    <img src="../brand/ming.png" alt="">
+    <div class="title"><b>ming-wasm</b><span>Ming-3.0-tts-0.5B, text to speech on your CPU</span></div>
+  </div>
+  <div class="headline">
+    <b>4.5× less</b>
+    <span><strong>memory than PyTorch</strong>, inside a browser tab</span>
+  </div>
+  <div class="chart" id="chart"></div>
+  <div class="note">
+    <span>Peak memory while speaking, on one Apple M4 Pro. Chrome counts every process of the tab's profile.<br>The model is an 850 MB download, kept in the browser after the first visit.</span>
+    <b>ming-wasm.fusor.build</b>
+  </div>
+<script>
+  const ROWS = [
+    { name: 'PyTorch reference', detail: 'CPU, fp32', gb: 6.1, color: 'var(--slate)' },
+    { name: 'PyTorch reference', detail: 'CPU, bf16', gb: 2.8, color: 'var(--slate)' },
+    { name: 'ming-wasm', detail: 'in a Chrome tab', gb: 1.37, color: 'var(--vermilion)' },
+    { name: 'ming-wasm', detail: 'native CLI', gb: 1.27, color: 'var(--oxide)' },
+  ];
+  const FULL = 6.1;
+  const chart = document.getElementById('chart');
+  for (const row of ROWS) {
+    const width = (row.gb / FULL) * 82;
+    chart.insertAdjacentHTML('beforeend', `
+      <div class="row">
+        <div class="name">${row.name}<small>${row.detail}</small></div>
+        <div class="bar">
+          <div class="fill" style="width: ${width}%; background: ${row.color}"></div>
+          <div class="value" style="left: ${width}%">${row.gb.toFixed(row.gb < 2 ? 2 : 1)} GB</div>
+        </div>
+      </div>`);
+  }
+</script>
+</body>
+</html>

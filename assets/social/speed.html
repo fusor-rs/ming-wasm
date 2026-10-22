@@ -1,0 +1,132 @@
+<!doctype html>
+<!--
+  The speed post: three lanes speak the same sentence (5.4 s of audio) over and over, in real time,
+  at the real-time factors measured in benchmarks.md. `window.render(t)` draws the frame at t seconds;
+  `node assets/social/render.mjs` captures every frame and encodes the video.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --canvas: #faf9f6; --surface: #f1efea; --ink: #272a2c; --soft: #5c5f61; --faint: #8b8d8d;
+    --hairline: #e3e0d9; --oxide: #a83228; --vermilion: #df5036; --slate: #9a9c9d;
+  }
+  html, body { margin: 0; }
+  body {
+    width: 1920px; height: 1080px; overflow: hidden; position: relative;
+    background: var(--canvas); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .masthead { position: absolute; left: 140px; top: 96px; display: flex; align-items: center; gap: 22px; }
+  .masthead img { height: 64px; }
+  .times { font-size: 30px; color: var(--faint); }
+  .title { margin-left: 18px; }
+  .title b { display: block; font-size: 40px; letter-spacing: -0.02em; }
+  .title span { font-size: 22px; color: var(--soft); }
+  .clock { position: absolute; right: 140px; top: 112px; text-align: right; }
+  .clock b { display: block; font-size: 52px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .clock span { font-size: 18px; color: var(--faint); }
+  .lane { position: absolute; left: 140px; width: 1640px; height: 150px; }
+  .label { position: absolute; left: 0; top: 0; font-size: 28px; font-weight: 600; }
+  .label small { font-weight: 400; color: var(--soft); font-size: 22px; margin-left: 14px; }
+  .count { position: absolute; right: 0; top: -6px; text-align: right; font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .count small { font-size: 18px; font-weight: 400; color: var(--faint); margin-left: 8px; }
+  .track { position: absolute; left: 0; right: 0; top: 92px; height: 2px; background: var(--hairline); }
+  .cap { position: absolute; top: 70px; width: 4px; height: 46px; border-radius: 2px; background: #cfcbc2; }
+  .cap.start { left: 0; } .cap.end { right: 0; }
+  .flash { position: absolute; right: -28px; top: 65px; width: 56px; height: 56px; border-radius: 50%; opacity: 0; }
+  .trail { position: absolute; top: 84px; height: 18px; border-radius: 9px; }
+  .dot { position: absolute; top: 79px; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; }
+  .big { position: absolute; left: 132px; bottom: 112px; font-size: 200px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; color: var(--oxide); }
+  .big-caption { position: absolute; left: 140px; bottom: 74px; font-size: 30px; color: var(--soft); }
+  .big-caption b { color: var(--ink); font-weight: 600; }
+  .note { position: absolute; right: 140px; bottom: 78px; text-align: right; font-size: 20px; line-height: 1.6; color: var(--faint); }
+  .note b { color: var(--ink); font-weight: 600; font-size: 24px; }
+</style>
+</head>
+<body>
+  <div class="masthead" id="masthead">
+    <img src="../../vendor/fusor-ai/assets/brand/fusor-ai.svg" alt="">
+    <span class="times">×</span>
+    <img src="../brand/ming.png" alt="">
+    <div class="title"><b>ming-wasm</b><span>Ming-3.0-tts-0.5B, text to speech on your CPU</span></div>
+  </div>
+  <div class="clock"><b id="clock">0.0 s</b><span>real time</span></div>
+  <div id="lanes"></div>
+  <div class="big" id="big">5.5×</div>
+  <div class="big-caption" id="big-caption"><b>faster than PyTorch</b>, inside a browser tab</div>
+  <div class="note" id="note">
+    <b>ming-wasm.fusor.build</b><br>
+    the same 5.4 s sentence, over and over, on one Apple M4 Pro CPU<br>
+    real-time factor: PyTorch 2.60 · Chrome 0.47 · native 0.28
+  </div>
+<script>
+  const AUDIO = 5.4;
+  const LANES = [
+    { name: 'PyTorch reference', detail: 'CPU, fp32', rtf: 2.60, color: 'var(--slate)', glow: 'rgba(154,156,157,0.35)' },
+    { name: 'ming-wasm', detail: 'in a Chrome tab', rtf: 0.47, color: 'var(--vermilion)', glow: 'rgba(223,80,54,0.45)' },
+    { name: 'ming-wasm', detail: 'native CLI', rtf: 0.28, color: 'var(--oxide)', glow: 'rgba(168,50,40,0.45)' },
+  ];
+  const TRACK = 1640;
+  const INTRO = 0.8;
+  const TOP = 290;
+  const GAP = 170;
+  const lanes = LANES.map((lane, index) => {
+    const root = document.createElement('div');
+    root.className = 'lane';
+    root.style.top = `${TOP + index * GAP}px`;
+    const seconds = (lane.rtf * AUDIO).toFixed(1);
+    root.innerHTML = `
+      <div class="label">${lane.name}<small>${lane.detail} · ${seconds} s per sentence</small></div>
+      <div class="count"><span>0</span><small>sentences</small></div>
+      <div class="track"></div><div class="cap start"></div><div class="cap end"></div>
+      <div class="flash"></div><div class="trail"></div><div class="dot"></div>`;
+    document.getElementById('lanes').append(root);
+    const part = (selector) => root.querySelector(selector);
+    part('.dot').style.background = lane.color;
+    part('.dot').style.boxShadow = `0 0 0 6px ${lane.glow}, 0 0 28px 6px ${lane.glow}`;
+    part('.flash').style.background = lane.glow;
+    return { lane, root, dot: part('.dot'), trail: part('.trail'), flash: part('.flash'), count: part('.count span') };
+  });
+
+  const clamp = (value) => Math.min(1, Math.max(0, value));
+  const ease = (value) => 1 - Math.pow(1 - clamp(value), 3);
+
+  window.render = (t) => {
+    const race = Math.max(0, t - INTRO);
+    document.getElementById('clock').textContent = `${race.toFixed(1)} s`;
+    const appear = ease(t / INTRO);
+    for (const [index, item] of lanes.entries()) {
+      const lift = ease((t - index * 0.12) / INTRO);
+      item.root.style.opacity = lift;
+      item.root.style.transform = `translateY(${(1 - lift) * 24}px)`;
+      const period = item.lane.rtf * AUDIO;
+      const done = Math.floor(race / period);
+      const progress = (race % period) / period;
+      const x = progress * TRACK;
+      item.dot.style.left = `${x}px`;
+      const speed = TRACK / period;
+      const tail = Math.min(x, Math.max(0, speed * 0.16));
+      item.trail.style.left = `${x - tail}px`;
+      item.trail.style.width = `${tail}px`;
+      item.trail.style.background = `linear-gradient(90deg, transparent, ${item.lane.glow})`;
+      item.count.textContent = done;
+      const since = race - done * period;
+      item.flash.style.opacity = done > 0 ? Math.max(0, 1 - since / 0.35) : 0;
+      item.flash.style.transform = `scale(${1 + since * 2})`;
+    }
+    document.getElementById('masthead').style.opacity = appear;
+    const reveal = ease((t - 2.2) / 0.6);
+    for (const id of ['big', 'big-caption']) {
+      const node = document.getElementById(id);
+      node.style.opacity = reveal;
+      node.style.transform = `translateY(${(1 - reveal) * 30}px)`;
+    }
+    document.getElementById('note').style.opacity = ease((t - 2.6) / 0.6);
+  };
+  window.render(0);
+</script>
+</body>
+</html>
