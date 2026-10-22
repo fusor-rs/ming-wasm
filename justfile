@@ -1,40 +1,12 @@
 # Ming-3.0-tts-0.5B in the browser. `just ui` to try it; `just build` then `just serve` to build
 # everything, the model included, from source.
 
-fusor_ai := "vendor/fusor-ai"
+import 'vendor/fusor-ai/just/product.just'
+
+name := "ming"
 checkpoint := env_var_or_default("CHECKPOINT", ".cache/Ming-3.0-tts-0.5B")
 reference := env_var_or_default("REFERENCE", "../ming-05b-experiment")
 profile := env_var_or_default("PROFILE", "mix")
-model := "dist/model"
-app := "app"
-engine := "app/engine/dist"
-fusor := justfile_directory() / ".tools/bin/fusor"
-fusor_version := "0.1.9"
-port := env_var_or_default("PORT", "8787")
-nice := "nice -n 19"
-threads_toolchain := "nightly-2025-11-15"
-wasm_bindgen_version := "0.2.129"
-variants := "web-single web-single-relaxed web-threaded web-threaded-relaxed"
-version := `v=$(cargo pkgid -p ming-cli); echo "${v##*[#@]}"`
-
-default:
-    @just --list
-
-check: lint wasm host
-
-lint:
-    cargo fmt --all -- --check
-    cargo fmt --manifest-path {{app}}/Cargo.toml -- --check
-    cargo clippy --manifest-path {{app}}/Cargo.toml --target wasm32-unknown-unknown --locked -- -D warnings
-    cargo test --workspace --locked
-    cargo clippy --workspace --all-targets --locked -- -D warnings
-    cargo doc --workspace --no-deps --locked
-
-# The runtime compiles a different kernel backend per target feature set: lint each.
-wasm:
-    cargo clippy -p ming-runtime --target wasm32-unknown-unknown --locked -- -D warnings
-    cargo clippy -p ming-runtime --target wasm32-unknown-unknown --locked --target-dir target/relaxed \
-      --config 'target.wasm32-unknown-unknown.rustflags=["-C", "target-feature=+simd128,+relaxed-simd"]' -- -D warnings
 
 host:
     sh -n install.sh
@@ -45,46 +17,10 @@ host:
     node --check scripts/node-smoke.mjs
     node --check e2e/run.mjs
 
-build: tools native model runtimes page
-
-# The threads toolchain, and the pinned wasm-bindgen, binaryen and fusor CLI (into .tools/).
-tools:
-    test -f {{fusor_ai}}/Cargo.toml || git submodule update --init
-    rustup target list --installed | grep -q wasm32-unknown-unknown || rustup target add wasm32-unknown-unknown
-    rustup run {{threads_toolchain}} rustc --version >/dev/null 2>&1 || rustup toolchain install {{threads_toolchain}} --profile minimal --component rust-src --target wasm32-unknown-unknown --no-self-update
-    {{fusor_ai}}/scripts/install-tools.sh {{wasm_bindgen_version}} > /dev/null
-    {{fusor}} --version 2>/dev/null | grep -qx 'fusor {{fusor_version}}' || cargo install --root .tools fusor-cli --version {{fusor_version}} --locked
-    cd {{app}} && {{fusor}} install
-
-native:
-    {{nice}} cargo build --release -p ming-cli
-
 # Downloads the pinned checkpoint (3 GB) unless it is already there, then compiles the bundle.
 model: native
     scripts/fetch-checkpoint.sh {{checkpoint}}
     target/release/ming compile {{checkpoint}} {{model}} --profile {{profile}}
-
-# The four browser runtimes, fusor-ai's loader next to them, and the sealed-runtime check.
-runtimes: tools
-    for variant in {{variants}}; do {{nice}} {{fusor_ai}}/scripts/build-runtime.sh ming-runtime $variant {{engine}} || exit 1; done
-    mkdir -p {{engine}}/host
-    cp {{fusor_ai}}/packages/host/loader.js {{fusor_ai}}/packages/host/worker.js {{engine}}/host/
-    for variant in {{variants}}; do \
-      flags=""; case $variant in *threaded*) flags="--threaded";; esac; case $variant in *relaxed*) ;; *) flags="$flags --no-relaxed";; esac; \
-      node {{fusor_ai}}/scripts/check-wasm-imports.mjs {{engine}}/$variant/ming_runtime_bg.wasm --glue {{engine}}/$variant/ming_runtime.js $flags || exit 1; \
-    done
-
-# The page, a fusor app, with the runtimes, into app/dist.
-page:
-    cd {{app}} && {{nice}} {{fusor}} build
-
-serve:
-    @if [ -f {{model}}/manifest.json ]; then \
-      echo "open http://localhost:{{port}}/?model=model/"; \
-    else \
-      echo "open http://localhost:{{port}}/"; \
-    fi
-    node {{fusor_ai}}/scripts/serve.mjs --port {{port}} --mount /={{app}}/dist --mount /model/={{model}}
 
 # Try it on localhost: the page with the bundle compiled here (`just model`), else the published one.
 ui: tools
@@ -103,14 +39,6 @@ parity: native
 
 bench: native
     target/release/ming bench {{model}}
-
-smoke:
-    node scripts/node-smoke.mjs {{model}} --build web-single
-    node scripts/node-smoke.mjs {{model}} --build web-single-relaxed
-
-e2e: page
-    cd e2e && npm install --no-audit --no-fund --silent && npx playwright install chromium
-    PORT={{port}} node e2e/run.mjs
 
 # Releases (CONTRIBUTING.md, "Releasing"): archives in target/release-archives/v<version>/.
 
@@ -209,3 +137,6 @@ deploy-space: runtimes page
         commit_message="Deploy ming-wasm {{version}}",
     )
     EOF
+
+# The fixed inputs the checks read.
+fixtures:
