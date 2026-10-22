@@ -4,6 +4,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
+use bundle::Engine as _;
 use ming::SAMPLE_RATE;
 use ming::flow_head::LATENT;
 use ming::pipeline::Stage;

@@ -445,6 +445,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fusor-ai-runtime"
+version = "0.1.2"
+dependencies = [
+ "blake3",
+ "fusor-ai-bundle",
+ "getrandom",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-rayon",
+]
+
+[[package]]
 name = "fusor-ai-team"
 version = "0.1.2"
 dependencies = [
@@ -584,14 +597,10 @@ dependencies = [
 name = "ming-runtime"
 version = "0.1.0"
 dependencies = [
- "blake3",
- "fusor-ai-bundle",
  "fusor-ai-ming",
- "getrandom",
- "serde",
+ "fusor-ai-runtime",
  "serde_json",
  "wasm-bindgen",
- "wasm-bindgen-rayon",
 ]
 
 [[package]]

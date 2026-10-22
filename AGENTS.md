@@ -42,11 +42,8 @@ Constraints that hold everywhere:
   build with `nightly-2025-11-15` and build-std; fusor-ai's `build-runtime.sh`
   passes `--ignore-rust-version` for them, so the wasm code path must keep
   building on that nightly. Don't move the pin without saying why in the change.
-- `unsafe` is denied workspace-wide and allowed only in `ming-runtime`'s
-  `entropy` module (getrandom's custom backend, an unmangled extern function),
-  which carries `#![expect(unsafe_code, reason = "…")]`. Every unsafe block
-  carries a `// SAFETY:` comment stating the invariant it relies on. Adding a
-  module to that list is a design change; say so.
+- `unsafe` is denied workspace-wide, with no exception: the getrandom backend that
+  needed it is fusor-ai's (its `runtime` crate).
 - The runtime imports nothing that reaches the network, storage, a clock or
   entropy. fusor-ai's `scripts/check-wasm-imports.mjs` is the check (`just
   runtimes` runs it on every build); never widen its allowlists to make a build
