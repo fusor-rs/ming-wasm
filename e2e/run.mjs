@@ -9,7 +9,7 @@
 // `--model <url>` is the page's `?model=`: `model/` (dist/model) on the local server, the page's
 // own default (the published bundle) with `--url`.
 //
-// Results (JSON, WAV, screenshots) go to e2e/results/<timestamp>-*.
+// Results (JSON, WAV, screenshots) go to e2e/results/<timestamp>-*, or to `--out <dir>`.
 // Env: ASR_PYTHON (default ../ming-05b-experiment/.venv-asr/bin/python).
 
 import { chromium } from 'playwright';
@@ -30,6 +30,7 @@ const { values } = parseArgs({
     'max-wer': { type: 'string', default: '0.15' },
     url: { type: 'string' },
     model: { type: 'string' },
+    out: { type: 'string' },
   },
 });
 const PORT = process.env.PORT ?? '8787';
@@ -38,7 +39,7 @@ const MODEL = values.model ?? (values.url ? undefined : 'model/');
 const ASR_PYTHON = process.env.ASR_PYTHON ?? join(ROOT, '../ming-05b-experiment/.venv-asr/bin/python');
 const LOAD_DEADLINE_MS = 10 * 60 * 1000;
 const GENERATE_DEADLINE_MS = 10 * 60 * 1000;
-const RUN_DIR = join(ROOT, 'e2e/results');
+const RUN_DIR = values.out ?? join(ROOT, 'e2e/results');
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -136,5 +137,5 @@ try {
 
 results.failures = failures;
 writeFileSync(join(RUN_DIR, `${STAMP}.json`), JSON.stringify(results, null, 2));
-log(failures.length ? `e2e FAILED (${failures.length})` : 'e2e passed', `-> e2e/results/${STAMP}.json`);
+log(failures.length ? `e2e FAILED (${failures.length})` : 'e2e passed', `-> ${values.out ?? 'e2e/results'}/${STAMP}.json`);
 process.exit(failures.length ? 1 : 0);
