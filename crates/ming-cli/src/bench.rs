@@ -4,6 +4,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
+use ming::SAMPLE_RATE;
 use ming::flow_head::LATENT;
 use ming::pipeline::Stage;
 use ming::preset::Preset;
@@ -69,7 +70,7 @@ pub fn run(engine: &mut Engine) -> Result<()> {
             _ => rest += per_frame(engine, &mut frame, stage),
         }
     }
-    let frame_ms = 1000.0 * FRAME_SAMPLES as f64 / 44_100.0;
+    let frame_ms = 1000.0 * FRAME_SAMPLES as f64 / f64::from(SAMPLE_RATE);
     for (preset, ms) in &flows {
         let total = rest + ms;
         println!(
