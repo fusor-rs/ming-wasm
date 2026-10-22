@@ -68,7 +68,7 @@ model: native
 runtimes: tools
     for variant in {{variants}}; do {{nice}} {{fusor_ai}}/scripts/build-runtime.sh ming-runtime $variant {{engine}} || exit 1; done
     mkdir -p {{engine}}/host
-    cp {{fusor_ai}}/packages/host/loader.js {{engine}}/host/
+    cp {{fusor_ai}}/packages/host/loader.js {{fusor_ai}}/packages/host/worker.js {{engine}}/host/
     for variant in {{variants}}; do \
       flags=""; case $variant in *threaded*) flags="--threaded";; esac; case $variant in *relaxed*) ;; *) flags="$flags --no-relaxed";; esac; \
       node {{fusor_ai}}/scripts/check-wasm-imports.mjs {{engine}}/$variant/ming_runtime_bg.wasm --glue {{engine}}/$variant/ming_runtime.js $flags || exit 1; \

@@ -59,6 +59,7 @@ export function onMount({ root, inputs, onCleanup }) {
     },
     done: ({ stopped, ms, networkRequests }) => finish(stopped, ms, networkRequests),
     error: ({ message }) => (loaded ? report({ type: 'error', message }) : fail(message)),
+    fatal: ({ message }) => fail(message),
   };
 
   engine.onmessage = ({ data }) => {
