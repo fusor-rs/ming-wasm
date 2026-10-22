@@ -6,13 +6,7 @@ permissions:
 
 jobs:
   check:
-    # The CLI's native kernels: NEON `sdot` on macOS (Apple silicon), scalar on
-    # Linux (x86-64).
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-15, ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

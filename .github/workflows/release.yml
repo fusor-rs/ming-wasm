@@ -37,7 +37,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          version=$(cargo metadata --locked --no-deps --format-version 1 |
+          version=$(cargo metadata --manifest-path vendor/fusor-ai/Cargo.toml --locked --no-deps --format-version 1 |
             jq -er '.packages[] | select(.name == "ming-cli") | .version')
           if [ "$EVENT_NAME" = release ] && [ "$RELEASE_TAG" != "v$version" ]; then
             echo "::error::Release tag $RELEASE_TAG must match Cargo.toml version v$version"

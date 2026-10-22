@@ -28,9 +28,10 @@ ui: tools
     just page
     just serve
 
-# Golden tensors from the fp32 PyTorch reference (see scripts/dump_goldens.py).
+# Golden tensors from the fp32 PyTorch reference (see
+# vendor/fusor-ai/models/ming/reference/dump_goldens.py).
 goldens:
-    {{reference}}/.venv/bin/python scripts/dump_goldens.py --reference {{reference}} --out fixtures/goldens/ref_f32_A.safetensors
+    {{reference}}/.venv/bin/python {{fusor_ai}}/models/ming/reference/dump_goldens.py --reference {{reference}} --out fixtures/goldens/ref_f32_A.safetensors
 
 # Every stage against the goldens, with the f32 bundle (4.3 GB, native only).
 parity: native
@@ -50,7 +51,7 @@ archive:
     # .cargo/config.toml tunes aarch64 builds for this machine's CPU; a release runs on every
     # Apple silicon Mac.
     if [ "$target" = aarch64-apple-darwin ]; then export RUSTFLAGS="-C target-cpu=apple-m1"; fi
-    cargo build --locked --release --target "$target" -p ming-cli
+    (cd {{fusor_ai}} && cargo build --locked --release --target "$target" -p ming-cli --target-dir "{{justfile_directory()}}/target")
     name="ming-{{version}}-$target"
     staging="target/release-archives/$name"
     out="target/release-archives/v{{version}}"

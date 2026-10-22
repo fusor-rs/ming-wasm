@@ -4,36 +4,33 @@ Use Rust 1.99 or later, edition 2024, Node.js 22 or later, and `just`. Clone wit
 `--recurse-submodules` (or run `just tools`, which initializes `vendor/fusor-ai`). `unsafe` is
 denied except in the module that states why it needs it (see `AGENTS.md`).
 
-Run `just check` before considering a change complete. It formats, tests and lints the crates
-natively, the runtime for `wasm32-unknown-unknown` (SIMD128 and relaxed SIMD) and the page,
-and syntax-checks the scripts. `just ui` builds the page and serves it; the page is a
-[fusor](https://github.com/fusor-rs/fusor) app in `app/`, built with the fusor CLI that
-`just tools` installs into `.tools/`. A change to the runtime, the page, the CLI or the
-submodule also needs `just build` once, then `just runtimes`, `just smoke`, `just parity` and
-`just e2e`. Say in the pull request what they showed (parity numbers, real-time factor, word
-error rate).
+Run `just check` before considering a change complete. It formats and lints the page and
+syntax-checks the scripts; fusor-ai's own check covers the runtime and the CLI. `just ui`
+builds the page and serves it; the page is a [fusor](https://github.com/fusor-rs/fusor) app in
+`app/`, built with the fusor CLI that `just tools` installs into `.tools/`. A change to the
+runtime, the page, the CLI or the submodule also needs `just build` once, then `just runtimes`,
+`just smoke`, `just parity` and `just e2e`. Say in the pull request what they showed (parity
+numbers, real-time factor, word error rate).
 
 The model, its compiler and the toolkit live in
 [fusor-ai](https://github.com/fusor-rs/fusor-ai). Everything this repository takes from it
-comes from `vendor/fusor-ai`, a submodule pinned to a commit pushed to fusor-ai: the
-`fusor-ai-*` crates, as path dependencies in the root `Cargo.toml`, the browser host scripts,
-the runtime build and the import check. To move to another fusor-ai commit, check it out in the
-submodule (`git -C vendor/fusor-ai checkout <commit>`) in one change of its own, with the
-checks above. Never add a crates.io pin, a `[patch]` table or a path to a fusor-ai checkout
-beside this one.
+comes from `vendor/fusor-ai`, a submodule pinned to a commit pushed to fusor-ai: the model's
+crates in `models/ming`, its runtime and CLI among them, the browser host scripts, the runtime
+build and the import check. To move to another fusor-ai commit, check it out in the submodule
+(`git -C vendor/fusor-ai checkout <commit>`) in one change of its own, with the checks above.
+Never add a crates.io pin, a `[patch]` table or a path to a fusor-ai checkout beside this one.
 
 The threaded runtimes need `nightly-2025-11-15` with `rust-src`; `just tools` installs it,
 and fusor-ai's `scripts/install-tools.sh` the pinned wasm-bindgen and binaryen into `.tools/`.
 
 ## Releasing
 
-Every crate shares one version: `version` under `[workspace.package]` in the root
-`Cargo.toml`. A release attaches the `ming` CLI archives, the page with its runtimes and
-`install.sh` to the GitHub release. No crate is published to crates.io; fusor-ai publishes
-the model and its compiler.
+A release takes its version from the `ming` CLI, whose crate in `vendor/fusor-ai/models/ming`
+has fusor-ai's version. It attaches the `ming` CLI archives, the page with its runtimes and
+`install.sh` to the GitHub release. No crate is published to crates.io.
 
-1. Bump `version`, run `just check` so `Cargo.lock` follows, and merge that to `main` with
-   CI passing.
+1. Move `vendor/fusor-ai` to the fusor-ai commit to release and merge that to `main` with CI
+   passing.
 2. On GitHub, publish a release whose tag is the version with a `v`, such as `v0.2.0`, on
    that commit.
 

@@ -10,10 +10,10 @@ don't invent scope, features or options beyond the task.
 
 ## Repository
 
-- `crates/ming-runtime`: the wasm-bindgen surface of the model (bundle parts
-  in, PCM out), built as four browser runtimes.
-- `crates/ming-cli`: the native CLI `ming` (`compile`, `say`, `bench`,
-  `parity`).
+- `vendor/fusor-ai/models/ming/runtime`: the wasm-bindgen surface of the model
+  (bundle parts in, PCM out), built as four browser runtimes.
+- `vendor/fusor-ai/models/ming/cli`: the native CLI `ming` (`compile`, `say`,
+  `bench`, `parity`).
 - `app/`: the page, a [fusor](https://github.com/fusor-rs/fusor) app with its own
   Cargo workspace (fusor pins wasm-bindgen 0.2.117, the runtime 0.2.129): the
   form and progress as Rust signals in `src/app.rs`, the template in
