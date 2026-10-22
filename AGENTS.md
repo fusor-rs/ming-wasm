@@ -25,16 +25,16 @@ don't invent scope, features or options beyond the task.
   reference and other runtimes, with the harness that reproduces it.
 - [fusor-ai](https://github.com/fusor-rs/fusor-ai): the model (`ming`), its
   compiler (`ming-compile`), the kernels, blocks and bundle format come from
-  crates.io as `fusor-ai-*` crates; `vendor/fusor-ai`, a git submodule at the
-  same release, supplies what crates.io does not carry: the browser loader and
-  compute pool, the runtime build, the import check and the dev server.
+  `vendor/fusor-ai`, a git submodule pinned to a commit pushed to fusor-ai, with
+  the browser loader and compute pool, the runtime build, the import check and
+  the dev server.
 
 What belongs where: model code (dimensions, tensor names, wiring, sampling,
 prompts, the text frontend) and anything another model could reuse go to
 fusor-ai, following its `AGENTS.md`. This repository holds what turns the model
 into an app: the runtime surface, the CLI, the page, the checks against the
-reference and the releases. A change to fusor-ai lands and is released there
-first; this repository then moves to that release.
+reference and the releases. A change to fusor-ai lands there first; this
+repository then moves its submodule to it.
 
 Constraints that hold everywhere:
 
@@ -51,11 +51,10 @@ Constraints that hold everywhere:
   entropy. fusor-ai's `scripts/check-wasm-imports.mjs` is the check (`just
   runtimes` runs it on every build); never widen its allowlists to make a build
   pass.
-- The `fusor-ai-*` versions in `[workspace.dependencies]` and `vendor/fusor-ai`
-  name the same fusor-ai release (the submodule at its `v<version>` tag), and
-  move together in a change of their own, with the parity numbers and the e2e
-  result it gave. `[patch.crates-io]` entries pointing into `vendor/fusor-ai`
-  are for trying an unreleased change locally and never land.
+- fusor-ai comes only from `vendor/fusor-ai`: path dependencies in
+  `[workspace.dependencies]`, never a crates.io version, a `[patch]` table or a
+  sibling checkout. The submodule moves to another pushed fusor-ai commit in a
+  change of its own, with the parity numbers and the e2e result it gave.
 - Every crate shares the version in `[workspace.package]`.
 
 ## The standard

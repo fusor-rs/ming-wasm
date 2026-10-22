@@ -14,14 +14,13 @@ submodule also needs `just build` once, then `just runtimes`, `just smoke`, `jus
 error rate).
 
 The model, its compiler and the toolkit live in
-[fusor-ai](https://github.com/fusor-rs/fusor-ai): the crates come from crates.io as
-`fusor-ai-*`, and `vendor/fusor-ai`, a submodule at the same release, supplies the browser
-host scripts, the runtime build and the import check. To move to a new fusor-ai release, bump
-the `fusor-ai-*` pins in the root `Cargo.toml` and check out its tag in the submodule
-(`git -C vendor/fusor-ai checkout v<version>`) in one change of its own, with the checks
-above. To try an unreleased fusor-ai change here first, point the submodule at it and add a
-`[patch.crates-io]` table that maps each `fusor-ai-*` crate to its path under
-`vendor/fusor-ai/crates`; don't commit the patch.
+[fusor-ai](https://github.com/fusor-rs/fusor-ai). Everything this repository takes from it
+comes from `vendor/fusor-ai`, a submodule pinned to a commit pushed to fusor-ai: the
+`fusor-ai-*` crates, as path dependencies in the root `Cargo.toml`, the browser host scripts,
+the runtime build and the import check. To move to another fusor-ai commit, check it out in the
+submodule (`git -C vendor/fusor-ai checkout <commit>`) in one change of its own, with the
+checks above. Never add a crates.io pin, a `[patch]` table or a path to a fusor-ai checkout
+beside this one.
 
 The threaded runtimes need `nightly-2025-11-15` with `rust-src`; `just tools` installs it,
 and fusor-ai's `scripts/install-tools.sh` the pinned wasm-bindgen and binaryen into `.tools/`.
