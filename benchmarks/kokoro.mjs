@@ -3,7 +3,7 @@
 // library come from the network (jsdelivr, Hugging Face) on each run.
 //
 //   PORT=8796 node benchmarks/kokoro.mjs [--dtype q8|fp32] [--repeat 3] [--out benchmarks/out/kokoro]
-import { chromium } from '../e2e/node_modules/playwright/index.mjs';
+import { chromium } from '../vendor/fusor-ai/packages/e2e/node_modules/playwright/index.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

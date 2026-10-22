@@ -1,6 +1,6 @@
 // Renders assets/brand/banner.html into banner.png and banner-dark.png with the e2e's Playwright
-// (`cd e2e && npm install` first).
-import { chromium } from '../e2e/node_modules/playwright/index.mjs';
+// (`cd vendor/fusor-ai/packages/e2e && npm ci` first).
+import { chromium } from '../vendor/fusor-ai/packages/e2e/node_modules/playwright/index.mjs';
 import { fileURLToPath } from 'node:url';
 
 const page = fileURLToPath(new URL('../assets/brand/banner.html', import.meta.url));

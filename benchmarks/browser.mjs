@@ -8,7 +8,7 @@
 //
 // Companion of e2e/run.mjs (which measures a fresh visit, the revisit and the ASR WER per run).
 
-import { chromium } from '../e2e/node_modules/playwright/index.mjs';
+import { chromium } from '../vendor/fusor-ai/packages/e2e/node_modules/playwright/index.mjs';
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

@@ -1,7 +1,0 @@
-{
-  "name": "ming-wasm-e2e",
-  "private": true,
-  "type": "module",
-  "description": "Headless Chrome runs of the Ming page: load, synthesize, check the output",
-  "dependencies": { "playwright": "1.64.1" }
-}

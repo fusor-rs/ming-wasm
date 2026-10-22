@@ -1,7 +1,7 @@
 // Renders the social posts: `node assets/social/render.mjs` captures speed.html frame by frame
 // (window.render(t)) into ming-wasm-speed.mp4 and memory.html into ming-wasm-memory.png. FFMPEG
 // names the ffmpeg binary (default `ffmpeg`); Playwright comes from the e2e's node_modules.
-import { chromium } from '../../e2e/node_modules/playwright/index.mjs';
+import { chromium } from '../../vendor/fusor-ai/packages/e2e/node_modules/playwright/index.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

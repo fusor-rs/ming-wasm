@@ -3,7 +3,7 @@
 // where its player started it, gives the sound; endcard.html closes the video. FFMPEG names ffmpeg.
 //
 //   FFMPEG=<path> node assets/social/demo.mjs   ->  assets/social/ming-wasm-demo.mp4
-import { chromium } from '../../e2e/node_modules/playwright/index.mjs';
+import { chromium } from '../../vendor/fusor-ai/packages/e2e/node_modules/playwright/index.mjs';
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

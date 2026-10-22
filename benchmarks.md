@@ -213,7 +213,7 @@ Kokoro produces a whole sentence at once, so its first audio is its total time (
 
 ## How to reproduce
 
-From a checkout with the bundles compiled (`just build`, `PROFILE=q7 just model`) and the e2e dependencies installed (`cd e2e && npm install && npx playwright install chromium`). The raw outputs of every command (TSV, JSON, WAV, logs) land in `benchmarks/out/`, and `python3 benchmarks/summarize.py` prints the median/min tables from them.
+From a checkout with the bundles compiled (`just build`, `PROFILE=q7 just model`) and the e2e dependencies installed (`cd vendor/fusor-ai/packages/e2e && npm ci && npx playwright install chromium`). The raw outputs of every command (TSV, JSON, WAV, logs) land in `benchmarks/out/`, and `python3 benchmarks/summarize.py` prints the median/min tables from them.
 
 ```sh
 # PyTorch reference: ../ming-05b-experiment holds Ming-3.0-tts/ (commit e999c39, patched as above),
