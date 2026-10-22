@@ -7,6 +7,8 @@
 use std::path::Path;
 
 use anyhow::{Result, ensure};
+use bundle::Stages as _;
+use harness::parity::relative_l2;
 use ming::flow_head::LATENT;
 use ming::model::HIDDEN;
 use ming::pipeline::Stage;
@@ -64,16 +66,6 @@ impl Goldens {
     }
 }
 
-fn relative_l2(ours: &[f32], reference: &[f32]) -> f64 {
-    let diff: f64 = ours
-        .iter()
-        .zip(reference)
-        .map(|(value, want)| f64::from(value - want).powi(2))
-        .sum();
-    let norm: f64 = reference.iter().map(|want| f64::from(*want).powi(2)).sum();
-    (diff / norm).sqrt()
-}
-
 pub fn run(engine: &mut Engine, goldens: &Path) -> Result<()> {
     let goldens = Goldens::read(goldens)?;
     let prompt = engine
@@ -86,7 +78,7 @@ pub fn run(engine: &mut Engine, goldens: &Path) -> Result<()> {
         goldens.ids
     );
     println!("prompt ids: {} tokens, identical", goldens.ids.len());
-    for stage in Stage::ALL {
+    for &stage in Stage::ALL {
         let report = match stage {
             Stage::Prefill => prefill(engine, &goldens, &prompt),
             Stage::Flow => flow(engine, &goldens),

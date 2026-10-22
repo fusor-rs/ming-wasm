@@ -5,6 +5,8 @@ use std::time::Instant;
 
 use anyhow::Result;
 use bundle::Engine as _;
+use bundle::Stages as _;
+use harness::bench::{row, time};
 use ming::SAMPLE_RATE;
 use ming::flow_head::LATENT;
 use ming::pipeline::Stage;
@@ -15,16 +17,6 @@ use ming::vocoder::FRAME_SAMPLES;
 
 const SENTENCE: &str = "The evening wind drifted down from the mountain pass, and the distant clouds slowly turned gold.";
 const CALLS: usize = 20;
-
-/// Milliseconds per call of `call`, after one warm-up call.
-fn time(mut call: impl FnMut()) -> f64 {
-    call();
-    let start = Instant::now();
-    for _ in 0..CALLS {
-        call();
-    }
-    start.elapsed().as_secs_f64() * 1000.0 / CALLS as f64
-}
 
 /// One frame's inputs, from a real prefill.
 struct Frame {
@@ -64,11 +56,11 @@ pub fn run(engine: &mut Engine) -> Result<()> {
     };
     let mut flows = Vec::new();
     let mut rest = 0.0;
-    for stage in Stage::ALL {
+    for &stage in Stage::ALL {
         match stage {
             Stage::Prefill => {}
-            Stage::Flow => flows = flow(engine, &frame),
-            _ => rest += per_frame(engine, &mut frame, stage),
+            Stage::Flow => flows = flow(engine, &frame)?,
+            _ => rest += per_frame(engine, &mut frame, stage)?,
         }
     }
     let frame_ms = 1000.0 * FRAME_SAMPLES as f64 / f64::from(SAMPLE_RATE);
@@ -84,20 +76,22 @@ pub fn run(engine: &mut Engine) -> Result<()> {
 }
 
 /// The flow head per preset.
-fn flow(engine: &mut Engine, frame: &Frame) -> Vec<(Preset, f64)> {
+fn flow(engine: &mut Engine, frame: &Frame) -> Result<Vec<(Preset, f64)>> {
     Preset::ALL
         .into_iter()
         .map(|preset| {
-            let ms = time(|| drop(engine.sample(&frame.z, &frame.history, &frame.noise, preset)));
+            let ms = time(CALLS, || {
+                anyhow::Ok(engine.sample(&frame.z, &frame.history, &frame.noise, preset))
+            })?;
             let name = format!("{preset:?}").to_lowercase();
             println!("  flow {name:9} {ms:6.2} ms/frame");
-            (preset, ms)
+            Ok((preset, ms))
         })
         .collect()
 }
 
 /// A stage other than prefill and flow, in ms per frame.
-fn per_frame(engine: &mut Engine, frame: &mut Frame, stage: Stage) -> f64 {
+fn per_frame(engine: &mut Engine, frame: &mut Frame, stage: Stage) -> Result<f64> {
     let ms = match stage {
         Stage::Vocode => {
             let latents = frame.latent.repeat(CALLS);
@@ -106,13 +100,14 @@ fn per_frame(engine: &mut Engine, frame: &mut Frame, stage: Stage) -> f64 {
             debug_assert!(samples >= (CALLS - 1) * FRAME_SAMPLES);
             start.elapsed().as_secs_f64() * 1000.0 / CALLS as f64
         }
-        Stage::Aggregate => time(|| drop(engine.aggregate(&frame.latent))),
-        Stage::Decode => time(|| {
+        Stage::Aggregate => time(CALLS, || anyhow::Ok(engine.aggregate(&frame.latent)))?,
+        Stage::Decode => time(CALLS, || {
             engine.decode(&frame.embedding, frame.position);
             frame.position += 1;
-        }),
+            anyhow::Ok(())
+        })?,
         Stage::Prefill | Stage::Flow => unreachable!("timed by `run`"),
     };
-    println!("  {:12} {ms:6.2} ms/frame", stage.name());
-    ms
+    row(stage, ms, "/frame");
+    Ok(ms)
 }

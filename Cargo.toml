@@ -41,9 +41,9 @@ team = { package = "fusor-ai-team", path = "vendor/fusor-ai/crates/team" }
 bundle = { package = "fusor-ai-bundle", path = "vendor/fusor-ai/crates/bundle" }
 compile = { package = "fusor-ai-compile", path = "vendor/fusor-ai/crates/compile" }
 runtime = { package = "fusor-ai-runtime", path = "vendor/fusor-ai/crates/runtime" }
+harness = { package = "fusor-ai-harness", path = "vendor/fusor-ai/crates/harness" }
 ming = { package = "fusor-ai-ming", path = "vendor/fusor-ai/crates/models/ming" }
 ming-compile = { package = "fusor-ai-ming-compile", path = "vendor/fusor-ai/crates/models/ming-compile" }
-rayon = "=1.12.0"
 serde_json = "=1.0.154"
 wasm-bindgen = "=0.2.129"
 anyhow = "=1.0.104"
