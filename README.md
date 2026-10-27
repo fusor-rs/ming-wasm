@@ -7,6 +7,10 @@
 
 # Text to speech in the browser, on the CPU
 
+**[Try it in your browser](https://huggingface.co/spaces/fusorlabs/ming-wasm)**: no install, no server. The model downloads once and runs on your CPU.
+
+**Speech 1.5–2× faster than real time**, in Chrome on an Apple M4 Pro, on the CPU. [Benchmarks](benchmarks.md)
+
 Type text and hear it spoken by [Ming-3.0-tts-0.5B](https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B), computed on your own device. No server, no API key, no GPU required, and once the model has loaded, nothing you type leaves the page.
 
 ming-wasm is the app around the model: a [fusor](https://github.com/fusor-rs/fusor) page, the browser runtime and a native CLI. The model itself, compiled to WebAssembly, is built with [fusor-ai](https://github.com/fusor-rs/fusor-ai), the toolkit for AI runtimes in Rust and WebAssembly.
